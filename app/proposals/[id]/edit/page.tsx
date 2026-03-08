@@ -52,8 +52,6 @@ type ProposalResponse = {
 };
 
 const EDITABLE_STATUSES = new Set([
-  "LEAD_REVIEW",
-  "LEAD_APPROVED",
   "LEAD_REJECTED",
   "SU_REJECTED",
   "DIRECTOR_REJECTED",
@@ -100,6 +98,19 @@ export default function ProposalEditPage() {
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
   const { requestConfirmation, ConfirmationComponent } = useConfirmation();
+
+  const clearProposalsCache = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const prefix = "eventgate:president:proposals:page:";
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < window.sessionStorage.length; i++) {
+        const key = window.sessionStorage.key(i);
+        if (key && key.startsWith(prefix)) keysToRemove.push(key);
+      }
+      keysToRemove.forEach((key) => window.sessionStorage.removeItem(key));
+    } catch {}
+  };
 
   const canEdit = useMemo(() => EDITABLE_STATUSES.has(status), [status]);
 
@@ -325,9 +336,10 @@ export default function ProposalEditPage() {
         throw new Error(json?.message || "Failed to update proposal");
       }
 
-      setMessage("Saved.");
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update proposal");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -336,37 +348,28 @@ export default function ProposalEditPage() {
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const confirmed = await requestConfirmation(
-      "Save Changes",
-      "Confirm updating the proposal. Leads will see the updated details.",
+      "Resubmit Proposal",
+      "Submit these edited changes back into the review workflow?",
       () => {},
-      { confirmText: "Save", cancelText: "Cancel" }
+      { confirmText: "Resubmit", cancelText: "Cancel" }
     );
     if (!confirmed) return;
-    await performSave();
-    if (!error) {
-      setMessage(
-        "Proposal updated. Leads can see changes. Use 'Resubmit' to trigger the review workflow."
-      );
-    }
-  };
-
-  const handleResubmit = async () => {
-    if (!proposalId) return;
+    const saved = await performSave();
+    if (!saved) return;
 
     setSaving(true);
     setError(null);
-    setMessage(null);
-
     try {
-      const res = await fetch(`/api/proposals/${proposalId}/resubmit`, {
+      const resubmitRes = await fetch(`/api/proposals/${proposalId}/resubmit`, {
         method: "POST",
       });
-      const json = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(json?.message || "Failed to resubmit proposal");
+      const resubmitJson = await resubmitRes.json().catch(() => null);
+      if (!resubmitRes.ok) {
+        throw new Error(resubmitJson?.message || "Failed to resubmit proposal");
       }
 
       setMessage("Resubmitted.");
+      clearProposalsCache();
       router.push("/proposals");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to resubmit proposal");
@@ -667,23 +670,8 @@ export default function ProposalEditPage() {
                   disabled={saving || !canEdit}
                   onClick={handleSave}
                 >
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving ? "Resubmitting..." : "Resubmit"}
                 </Button>
-
-                {(status === "LEAD_REJECTED" ||
-                  status === "SU_REJECTED" ||
-                  status === "DIRECTOR_REJECTED" ||
-                  status === "RESUBMISSION_REQUIRED") && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-none"
-                    disabled={saving}
-                    onClick={handleResubmit}
-                  >
-                    Resubmit
-                  </Button>
-                )}
               </div>
             </form>
           </CardContent>

@@ -10,6 +10,50 @@ const RESUBMITTABLE_STATUSES = new Set([
   "RESUBMISSION_REQUIRED",
 ]);
 
+function latestDate(dates: Array<Date | null | undefined>) {
+  const valid = dates.filter(Boolean) as Date[];
+  if (valid.length === 0) return null;
+  return new Date(Math.max(...valid.map((d) => d.getTime())));
+}
+
+function getLatestRejectionAt(proposal: {
+  leadApprovals: Array<{ approved: boolean; updatedAt: Date }>;
+  reviews: Array<{
+    reviewerRole: "STUDENT_UNION" | "DIRECTOR";
+    approved: boolean;
+    updatedAt: Date;
+  }>;
+}) {
+  const lead = proposal.leadApprovals
+    .filter((a) => !a.approved)
+    .map((a) => a.updatedAt);
+  const su = proposal.reviews
+    .filter((r) => r.reviewerRole === "STUDENT_UNION" && !r.approved)
+    .map((r) => r.updatedAt);
+  const director = proposal.reviews
+    .filter((r) => r.reviewerRole === "DIRECTOR" && !r.approved)
+    .map((r) => r.updatedAt);
+  return latestDate([...lead, ...su, ...director]);
+}
+
+function getLatestContentEditAt(proposal: {
+  event: {
+    updatedAt: Date;
+    occurrences: Array<{ updatedAt: Date; createdAt: Date }>;
+  } | null;
+  contacts: Array<{ updatedAt: Date; createdAt: Date }>;
+  collaborators: Array<{ createdAt: Date }>;
+  guests: Array<{ createdAt: Date }>;
+}) {
+  return latestDate([
+    proposal.event?.updatedAt,
+    ...(proposal.event?.occurrences || []).map((o) => o.updatedAt || o.createdAt),
+    ...proposal.contacts.map((c) => c.updatedAt || c.createdAt),
+    ...proposal.collaborators.map((c) => c.createdAt),
+    ...proposal.guests.map((g) => g.createdAt),
+  ]);
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -59,6 +103,22 @@ export async function POST(
     select: {
       id: true,
       status: true,
+      leadApprovals: {
+        select: { approved: true, updatedAt: true },
+      },
+      reviews: {
+        where: { reviewerRole: { in: ["STUDENT_UNION", "DIRECTOR"] } },
+        select: { reviewerRole: true, approved: true, updatedAt: true },
+      },
+      event: {
+        select: {
+          updatedAt: true,
+          occurrences: { select: { updatedAt: true, createdAt: true } },
+        },
+      },
+      contacts: { select: { updatedAt: true, createdAt: true } },
+      collaborators: { select: { createdAt: true } },
+      guests: { select: { createdAt: true } },
     },
   });
 
@@ -72,6 +132,24 @@ export async function POST(
   if (!RESUBMITTABLE_STATUSES.has(proposal.status)) {
     return NextResponse.json(
       { message: "This proposal cannot be resubmitted at its current stage" },
+      { status: 403 },
+    );
+  }
+
+  const latestRejectionAt = getLatestRejectionAt(proposal);
+  const latestContentEditAt = getLatestContentEditAt(proposal);
+  const readyForResubmit = Boolean(
+    latestRejectionAt &&
+      latestContentEditAt &&
+      latestContentEditAt.getTime() > latestRejectionAt.getTime(),
+  );
+
+  if (!readyForResubmit) {
+    return NextResponse.json(
+      {
+        message:
+          "Please edit and save your proposal changes before resubmitting.",
+      },
       { status: 403 },
     );
   }
@@ -136,6 +214,38 @@ export async function POST(
           actionPath: grant.role === "VP" ? "/vp" : "/secretary",
         }),
       ),
+    );
+
+    await Promise.all(
+      leadGrants.map(async (grant) => {
+        const recipientEmail = grant.email.toLowerCase();
+        const comment = "Proposal resubmitted and awaiting your review.";
+        const existing = await prisma.presidentNotification.findFirst({
+          where: {
+            recipientEmail,
+            proposalId,
+            stage: "LEAD",
+            decision: "APPROVED",
+            actorRole: "PRESIDENT",
+            comment,
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        if (!existing) {
+          await prisma.presidentNotification.create({
+            data: {
+              recipientEmail,
+              proposalId,
+              eventTitle: updated.event?.title || "Untitled Event",
+              stage: "LEAD",
+              decision: "APPROVED",
+              actorRole: "PRESIDENT",
+              comment,
+            },
+          });
+        }
+      }),
     );
 
     return NextResponse.json({

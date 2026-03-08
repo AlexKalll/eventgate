@@ -123,6 +123,7 @@ model Proposal {
   collaborators     ProposalCollaborator[]
   guests            ProposalGuest[]
   leadApprovals     ProposalLeadApproval[]
+  notifications     PresidentNotification[]
   
   // Status tracking
   status            ProposalStatus   @default(PENDING)
@@ -269,6 +270,36 @@ enum ProposalStatus {
   DIRECTOR_APPROVED
   DIRECTOR_REJECTED
   RESUBMISSION_REQUIRED
+}
+
+enum NotificationStage {
+  LEAD
+  STUDENT_UNION
+  DIRECTOR
+}
+
+enum NotificationDecision {
+  APPROVED
+  REJECTED
+}
+
+model PresidentNotification {
+  id             String               @id @default(cuid())
+  recipientEmail String
+  proposalId     String
+  proposal       Proposal             @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  eventTitle     String
+  stage          NotificationStage
+  decision       NotificationDecision
+  actorRole      String
+  comment        String?
+  readAt         DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([recipientEmail, deletedAt, createdAt])
+  @@index([recipientEmail, deletedAt, readAt])
 }
 
 // Location model for predefined event venues

@@ -59,6 +59,16 @@ export async function POST(
 
     const normalizedRecommendation = String(suRecommendation);
     const suApproved = normalizedRecommendation === "Recommended";
+    const normalizedComments = String(suComments ?? "").trim();
+
+    if (!suApproved && !normalizedComments) {
+      return NextResponse.json(
+        {
+          message: "Rejection must include comments explaining the reason",
+        },
+        { status: 400 },
+      );
+    }
 
     const updatedProposal = await prisma.$transaction(async (tx) => {
       await tx.proposalReview.upsert({
@@ -73,13 +83,13 @@ export async function POST(
           reviewerRole: "STUDENT_UNION",
           reviewerEmail: user.email.toLowerCase(),
           recommendation: normalizedRecommendation,
-          comments: suComments ?? "",
+          comments: normalizedComments,
           approved: suApproved,
         },
         update: {
           reviewerEmail: user.email.toLowerCase(),
           recommendation: normalizedRecommendation,
-          comments: suComments ?? "",
+          comments: normalizedComments,
           approved: suApproved,
         },
       });
@@ -91,6 +101,28 @@ export async function POST(
         },
       });
     });
+
+    const proposalForNotification = await prisma.proposal.findUnique({
+      where: { id: proposalId },
+      select: {
+        submittedBy: true,
+        event: { select: { title: true } },
+      },
+    });
+
+    if (proposalForNotification?.submittedBy) {
+      await prisma.presidentNotification.create({
+        data: {
+          recipientEmail: proposalForNotification.submittedBy.toLowerCase(),
+          proposalId,
+          eventTitle: proposalForNotification.event?.title || "Untitled Event",
+          stage: "STUDENT_UNION",
+          decision: suApproved ? "APPROVED" : "REJECTED",
+          actorRole: "STUDENT_UNION",
+          comment: normalizedComments || null,
+        },
+      });
+    }
 
     if (!suApproved) {
       const proposal = await prisma.proposal.findUnique({
@@ -111,7 +143,7 @@ export async function POST(
           heading: "Proposal rejected by Student Union",
           message:
             "Your proposal was rejected by the Student Union. Please review the comment below, fix the issues, and resubmit.\n\n" +
-            String(suComments ?? ""),
+            normalizedComments,
           actionLabel: "Fix & Resubmit",
           actionPath: `/proposals/${proposalId}/edit`,
         });
@@ -135,6 +167,38 @@ export async function POST(
 
       if (directorGrants.length > 0) {
         const eventTitle = proposal?.event?.title || "Untitled Event";
+        await Promise.all(
+          directorGrants.map(async (grant) => {
+            const recipientEmail = grant.email.toLowerCase();
+            const comment = "Proposal approved by Student Union and awaiting your review.";
+            const existing = await prisma.presidentNotification.findFirst({
+              where: {
+                recipientEmail,
+                proposalId,
+                stage: "DIRECTOR",
+                decision: "APPROVED",
+                actorRole: "STUDENT_UNION",
+                comment,
+                deletedAt: null,
+              },
+              select: { id: true },
+            });
+            if (!existing) {
+              await prisma.presidentNotification.create({
+                data: {
+                  recipientEmail,
+                  proposalId,
+                  eventTitle,
+                  stage: "DIRECTOR",
+                  decision: "APPROVED",
+                  actorRole: "STUDENT_UNION",
+                  comment,
+                },
+              });
+            }
+          }),
+        );
+
         await Promise.all(
           directorGrants.map((grant) =>
             sendProposalStatusEmail({

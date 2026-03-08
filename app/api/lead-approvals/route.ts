@@ -169,6 +169,28 @@ export async function POST(request: Request) {
       data: { status: newStatus },
     });
 
+    const proposalForNotification = await prisma.proposal.findUnique({
+      where: { id: proposalId },
+      select: {
+        submittedBy: true,
+        event: { select: { title: true } },
+      },
+    });
+
+    if (proposalForNotification?.submittedBy) {
+      await prisma.presidentNotification.create({
+        data: {
+          recipientEmail: proposalForNotification.submittedBy.toLowerCase(),
+          proposalId,
+          eventTitle: proposalForNotification.event?.title || "Untitled Event",
+          stage: "LEAD",
+          decision: approved ? "APPROVED" : "REJECTED",
+          actorRole: leadRole,
+          comment: String(comments || "").trim() || null,
+        },
+      });
+    }
+
     if (newStatus === "LEAD_REJECTED") {
       const proposal = await prisma.proposal.findUnique({
         where: { id: proposalId },
@@ -217,6 +239,38 @@ export async function POST(request: Request) {
 
       if (suGrants.length > 0) {
         const eventTitle = proposal?.event?.title || "Untitled Event";
+        await Promise.all(
+          suGrants.map(async (grant) => {
+            const recipientEmail = grant.email.toLowerCase();
+            const comment = "Proposal is now awaiting Student Union review.";
+            const existing = await prisma.presidentNotification.findFirst({
+              where: {
+                recipientEmail,
+                proposalId,
+                stage: "STUDENT_UNION",
+                decision: "APPROVED",
+                actorRole: "SYSTEM",
+                comment,
+                deletedAt: null,
+              },
+              select: { id: true },
+            });
+            if (!existing) {
+              await prisma.presidentNotification.create({
+                data: {
+                  recipientEmail,
+                  proposalId,
+                  eventTitle,
+                  stage: "STUDENT_UNION",
+                  decision: "APPROVED",
+                  actorRole: "SYSTEM",
+                  comment,
+                },
+              });
+            }
+          }),
+        );
+
         await Promise.all(
           suGrants.map((grant) =>
             sendProposalStatusEmail({

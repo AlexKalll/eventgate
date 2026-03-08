@@ -3,8 +3,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const EDITABLE_STATUSES = new Set([
-  "LEAD_REVIEW",
-  "LEAD_APPROVED",
   "LEAD_REJECTED",
   "SU_REJECTED",
   "DIRECTOR_REJECTED",
@@ -212,7 +210,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         message:
-          "Editing is not allowed at this stage. You can only edit before Student Union, or after a rejection.",
+          "Editing is not allowed at this stage. You can only edit after a rejection or when resubmission is required.",
       },
       { status: 403 }
     );

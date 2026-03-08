@@ -61,6 +61,55 @@ export default function NewProposalPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const getFieldIdFromErrorKey = (key: string) => {
+    if (key === "title") return "title";
+    if (key === "description") return "description";
+    if (key === "presidentName") return "presidentName";
+    if (key.startsWith("occurrences.")) {
+      const parts = key.split(".");
+      const idx = parts[1];
+      const field = parts[2];
+      if (field === "startDateTime") return `startDateTime-${idx}`;
+      if (field === "endDateTime") return `endDateTime-${idx}`;
+      if (field === "location") return `location-${idx}`;
+    }
+    return null;
+  };
+
+  const scrollToFirstInvalidField = (nextErrors: Record<string, string>) => {
+    const firstKey = Object.keys(nextErrors).find((key) =>
+      Boolean(getFieldIdFromErrorKey(key)),
+    );
+    if (!firstKey) return;
+
+    const fieldId = getFieldIdFromErrorKey(firstKey);
+    if (!fieldId) return;
+
+    const field = document.getElementById(fieldId) as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | null;
+    if (!field) return;
+
+    // Use explicit page scroll for reliable positioning across browsers.
+    window.requestAnimationFrame(() => {
+      const rect = field.getBoundingClientRect();
+      const top = Math.max(0, window.scrollY + rect.top - 140);
+      window.scrollTo({ top, behavior: "smooth" });
+      window.setTimeout(() => {
+        field.focus({ preventScroll: true });
+      }, 180);
+    });
+  };
+
+  const getFirstFieldError = (nextErrors: Record<string, string>) => {
+    const firstKey = Object.keys(nextErrors).find((key) =>
+      Boolean(getFieldIdFromErrorKey(key)),
+    );
+    if (!firstKey) return null;
+    return { key: firstKey, message: nextErrors[firstKey] };
+  };
   useEffect(() => {
     const fetchClubInfo = async () => {
       try {
@@ -176,7 +225,9 @@ export default function NewProposalPage() {
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
-      setFormError("Please fix the highlighted fields.");
+      const firstFieldError = getFirstFieldError(nextErrors);
+      setFormError(firstFieldError?.message || "Please fix the highlighted fields.");
+      scrollToFirstInvalidField(nextErrors);
       return;
     }
 
@@ -302,11 +353,7 @@ export default function NewProposalPage() {
             <CardDescription>Fill out the information below.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-6">
-              {formError && (
-                <p className="text-sm text-destructive">{formError}</p>
-              )}
-
+            <form onSubmit={handleSubmit} noValidate className="grid gap-6">
               {/* Club Information Display */}
               <div className="grid gap-2">
                 <Label>Club</Label>
@@ -745,6 +792,22 @@ export default function NewProposalPage() {
               </div>
 
               {message && <p className="text-sm text-emerald-700">{message}</p>}
+              {formError && (
+                <div
+                  className="border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                  role="alert"
+                >
+                  <span>{formError}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-none h-8 border-red-300 text-red-700 hover:bg-red-100"
+                    onClick={() => scrollToFirstInvalidField(errors)}
+                  >
+                    Go to field
+                  </Button>
+                </div>
+              )}
 
               <Button
                 type="submit"

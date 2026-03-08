@@ -123,6 +123,20 @@ export async function POST(
     });
 
     if (presidentEmail) {
+      await prisma.presidentNotification.create({
+        data: {
+          recipientEmail: presidentEmail.toLowerCase(),
+          proposalId,
+          eventTitle,
+          stage: "DIRECTOR",
+          decision: directorApproved ? "APPROVED" : "REJECTED",
+          actorRole: "DIRECTOR",
+          comment: String(directorComments || "").trim() || null,
+        },
+      });
+    }
+
+    if (presidentEmail) {
       if (directorApproved) {
         console.info("[director-review] sending approval email", {
           to: presidentEmail,

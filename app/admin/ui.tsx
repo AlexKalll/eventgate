@@ -338,6 +338,7 @@ export default function AdminClient() {
 
         <ExistingClubsSection
           clubs={clubs}
+          loading={loading}
           onEdit={startEditClub}
           onDelete={deleteClub}
         />

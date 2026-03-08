@@ -200,8 +200,13 @@ export default function AdminClubsPage() {
   };
 
   return (
-    <div className="grid gap-6">
-      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 space-y-6">
+      <div className="rounded-none border border-gray-200 bg-white p-6">
+        <h1 className="text-2xl font-bold text-gray-900">Clubs</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Edit club details and manage leadership contacts.
+        </p>
+      </div>
 
       <Dialog
         open={isEditOpen}
@@ -209,7 +214,7 @@ export default function AdminClubsPage() {
           if (!open) closeEdit();
         }}
       >
-        <DialogContent>
+        <DialogContent className="rounded-none">
           <DialogHeader>
             <DialogTitle>Edit Club</DialogTitle>
             <DialogDescription>
@@ -271,16 +276,17 @@ export default function AdminClubsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeEdit}>
+            <Button variant="outline" onClick={closeEdit} className="rounded-none">
               Cancel
             </Button>
-            <Button onClick={save}>Confirm</Button>
+            <Button onClick={save} className="rounded-none">Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <ExistingClubsSection
         clubs={clubs}
+        loading={loading}
         onEdit={startEdit}
         onDelete={deleteClub}
       />

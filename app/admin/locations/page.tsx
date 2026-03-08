@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Plus, Pencil, Trash2, MapPin } from "lucide-react";
 import {
   Dialog,
@@ -242,153 +243,188 @@ export default function AdminLocationsPage() {
   const inactiveLocations = locations.filter((l) => !l.isActive);
 
   return (
-    <div className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Event Locations</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage predefined venues for event proposals
-          </p>
-        </div>
-        <Button
-          onClick={openAddDialog}
-          className="bg-[var(--aau-blue)] hover:bg-[var(--aau-blue)]/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Location
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 space-y-6">
+      <Card className="rounded-none border border-gray-200">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Event Locations</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage predefined venues for event proposals
+              </p>
+            </div>
+            <Button
+              onClick={openAddDialog}
+              className="bg-[var(--aau-blue)] hover:bg-[var(--aau-blue)]/90 rounded-none"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Location
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+      {loading && (
+        <Card className="rounded-none border border-gray-200">
+          <CardContent className="p-6">
+            <div className="space-y-4 animate-pulse">
+              <div className="h-4 w-40 bg-gray-200 rounded" />
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={`location-skeleton-${idx}`}
+                    className="p-4 border border-gray-200 bg-white rounded-none space-y-3"
+                  >
+                    <div className="h-4 w-40 bg-gray-200 rounded" />
+                    <div className="h-3 w-52 bg-gray-100 rounded" />
+                    <div className="h-3 w-28 bg-gray-100 rounded" />
+                    <div className="h-8 w-24 bg-gray-100 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!loading && locations.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
-          <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">No locations have been added yet.</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Click "Add Location" to create your first venue.
-          </p>
-        </div>
+        <Card className="rounded-none border border-gray-200">
+          <CardContent className="text-center py-12 border-2 border-dashed border-gray-200 rounded-none">
+            <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500">No locations have been added yet.</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Click &quot;Add Location&quot; to create your first venue.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {!loading && activeLocations.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-            Active Locations ({activeLocations.length})
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {activeLocations.map((location) => (
-              <div
-                key={location.id}
-                className="p-4 border border-gray-200 bg-white rounded-lg hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-900 truncate">
-                      {location.name}
-                    </h3>
-                    {location.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                        {location.description}
-                      </p>
-                    )}
-                    {location.capacity && (
-                      <p className="text-xs text-gray-400 mt-2">
-                        Capacity: {location.capacity}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-[var(--aau-blue)]"
-                      onClick={() => openEditDialog(location)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-red-600"
-                      onClick={() => deleteLocation(location.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="mt-2 h-auto p-0 text-xs text-gray-500"
-                  onClick={() => toggleLocationStatus(location)}
+        <Card className="rounded-none border border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+              Active Locations ({activeLocations.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {activeLocations.map((location) => (
+                <div
+                  key={location.id}
+                  className="p-4 border border-gray-200 bg-white rounded-none hover:shadow-md transition-shadow"
                 >
-                  Deactivate
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {location.name}
+                      </h3>
+                      {location.description && (
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          {location.description}
+                        </p>
+                      )}
+                      {location.capacity && (
+                        <p className="text-xs text-gray-400 mt-2">
+                          Capacity: {location.capacity}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-[var(--aau-blue)] rounded-none"
+                        onClick={() => openEditDialog(location)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-red-600 rounded-none"
+                        onClick={() => deleteLocation(location.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="mt-2 h-auto p-0 text-xs text-gray-500"
+                    onClick={() => toggleLocationStatus(location)}
+                  >
+                    Deactivate
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {!loading && inactiveLocations.length > 0 && (
-        <div className="space-y-4 mt-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-            Inactive Locations ({inactiveLocations.length})
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {inactiveLocations.map((location) => (
-              <div
-                key={location.id}
-                className="p-4 border border-gray-200 bg-gray-50 rounded-lg opacity-60"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-gray-700 truncate">
-                      {location.name}
-                    </h3>
-                    {location.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                        {location.description}
-                      </p>
-                    )}
-                    {location.capacity && (
-                      <p className="text-xs text-gray-400 mt-2">
-                        Capacity: {location.capacity}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-[var(--aau-blue)]"
-                      onClick={() => openEditDialog(location)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-red-600"
-                      onClick={() => deleteLocation(location.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="mt-2 h-auto p-0 text-xs text-gray-500"
-                  onClick={() => toggleLocationStatus(location)}
+        <Card className="rounded-none border border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              Inactive Locations ({inactiveLocations.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {inactiveLocations.map((location) => (
+                <div
+                  key={location.id}
+                  className="p-4 border border-gray-200 bg-gray-50 rounded-none opacity-60"
                 >
-                  Activate
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-gray-700 truncate">
+                        {location.name}
+                      </h3>
+                      {location.description && (
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          {location.description}
+                        </p>
+                      )}
+                      {location.capacity && (
+                        <p className="text-xs text-gray-400 mt-2">
+                          Capacity: {location.capacity}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-[var(--aau-blue)] rounded-none"
+                        onClick={() => openEditDialog(location)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-red-600 rounded-none"
+                        onClick={() => deleteLocation(location.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="mt-2 h-auto p-0 text-xs text-gray-500"
+                    onClick={() => toggleLocationStatus(location)}
+                  >
+                    Activate
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Add/Edit Dialog */}
