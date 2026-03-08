@@ -35,6 +35,7 @@ interface Proposal {
   title: string;
   status: string;
   createdAt: string;
+  resubmissionReady?: boolean;
   event: {
     title: string;
     startTime: string;
@@ -133,18 +134,12 @@ function setClubNameCache(value: ClubNameCacheEntry) {
 export default function ProposalsPage() {
   const { isPending } = useSession();
   const router = useRouter();
-  const initialPageCache = getProposalsCache(DEFAULT_PAGE);
-  const [proposals, setProposals] = useState<Proposal[]>(
-    initialPageCache?.proposals ?? [],
-  );
-  const [loading, setLoading] = useState(!initialPageCache);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [resubmittingId, setResubmittingId] = useState<string | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [page, setPage] = useState(DEFAULT_PAGE);
-  const [pagination, setPagination] = useState<ProposalPagination | null>(
-    initialPageCache?.pagination ?? null,
-  );
+  const [pagination, setPagination] = useState<ProposalPagination | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(
     null,
   );
@@ -154,8 +149,7 @@ export default function ProposalsPage() {
   const [guestsOpen, setGuestsOpen] = useState(false);
   const [contributorsPage, setContributorsPage] = useState(1);
   const [guestsPage, setGuestsPage] = useState(1);
-  const initialClubCache = getClubNameCache();
-  const [clubName, setClubName] = useState(initialClubCache?.clubName ?? "");
+  const [clubName, setClubName] = useState("");
 
   const fetchProposals = async (nextPage: number) => {
     const response = await fetch(`/api/proposals?page=${nextPage}&limit=10`, {
@@ -280,41 +274,11 @@ export default function ProposalsPage() {
 
   const canEditProposal = (status: string) => {
     return (
-      status === "LEAD_REVIEW" ||
-      status === "LEAD_APPROVED" ||
       status === "LEAD_REJECTED" ||
       status === "SU_REJECTED" ||
       status === "DIRECTOR_REJECTED" ||
       status === "RESUBMISSION_REQUIRED"
     );
-  };
-
-  const canResubmitProposal = (status: string) => {
-    return (
-      status === "LEAD_REJECTED" ||
-      status === "SU_REJECTED" ||
-      status === "DIRECTOR_REJECTED" ||
-      status === "RESUBMISSION_REQUIRED"
-    );
-  };
-
-  const handleResubmit = async (proposalId: string) => {
-    setResubmittingId(proposalId);
-    setError(null);
-    try {
-      const res = await fetch(`/api/proposals/${proposalId}/resubmit`, {
-        method: "POST",
-      });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(body?.message || "Failed to resubmit proposal");
-      }
-      await fetchProposals(page);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to resubmit proposal");
-    } finally {
-      setResubmittingId(null);
-    }
   };
 
   const handleArchive = async (proposalId: string) => {
@@ -437,7 +401,7 @@ export default function ProposalsPage() {
                 No Proposals Yet
               </h3>
               <p className="text-gray-600 mb-6">
-                You haven't submitted any event proposals yet.
+                You haven&apos;t submitted any event proposals yet.
               </p>
               <Button
                 onClick={() => router.push("/president/new")}
@@ -474,8 +438,51 @@ export default function ProposalsPage() {
                             openDetails(proposal);
                           }
                         }}
-                        className="relative flex items-center gap-3 px-4 py-3 cursor-pointer"
+                        className="relative flex items-center gap-3 px-4 py-3 pr-14 cursor-pointer"
                       >
+                        <div
+                          className="absolute right-2 top-2 z-10"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              asChild
+                              className="rounded-none"
+                            >
+                              <Button
+                                variant="destructive"
+                                disabled={
+                                  archivingId === proposal.id
+                                }
+                                className="rounded-none h-8 w-8 p-0 bg-white hover:bg-white"
+                                aria-label="Archive"
+                              >
+                                <Trash className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-none sm:rounded-none">
+                              <AlertDialogHeader className="rounded-none">
+                                <AlertDialogTitle className="rounded-none">
+                                  Archive this proposal?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="rounded-none">
+                                  It will be moved to the Archive page and will
+                                  be deleted automatically after 2 days.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleArchive(proposal.id)}
+                                >
+                                  Archive
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0">
@@ -524,58 +531,6 @@ export default function ProposalsPage() {
                             >
                               Edit
                               <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <AlertDialog>
-                            <AlertDialogTrigger
-                              asChild
-                              className="rounded-none"
-                            >
-                              <Button
-                                variant="destructive"
-                                disabled={
-                                  archivingId === proposal.id ||
-                                  resubmittingId === proposal.id
-                                }
-                                className="rounded-none h-8 w-8 p-0 bg-white hover:bg-white"
-                                aria-label="Archive"
-                              >
-                                <Trash className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-none sm:rounded-none">
-                              <AlertDialogHeader className="rounded-none">
-                                <AlertDialogTitle className="rounded-none">
-                                  Archive this proposal?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription className="rounded-none">
-                                  It will be moved to the Archive page and will
-                                  be deleted automatically after 2 days.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleArchive(proposal.id)}
-                                >
-                                  Archive
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          {canResubmitProposal(proposal.status) && (
-                            <Button
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleResubmit(proposal.id);
-                              }}
-                              disabled={resubmittingId === proposal.id}
-                              className="rounded-none h-8"
-                            >
-                              {resubmittingId === proposal.id
-                                ? "Resubmitting..."
-                                : "Resubmit"}
                             </Button>
                           )}
                         </div>

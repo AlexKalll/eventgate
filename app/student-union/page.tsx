@@ -14,6 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDualTimeRange } from "@/lib/utils";
 import { statusColors, statusLabels } from "@/lib/proposal-status";
 
@@ -69,6 +79,9 @@ export default function StudentUnionPage() {
     null,
   );
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [showRejectReason, setShowRejectReason] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (isPending) return;
@@ -126,6 +139,8 @@ export default function StudentUnionPage() {
         setSelectedProposal(null);
         setDetailsOpen(false);
       }
+      setShowRejectReason(false);
+      setValidationError(null);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to submit approval",
@@ -133,6 +148,31 @@ export default function StudentUnionPage() {
     } finally {
       setApproving(null);
     }
+  };
+
+  const handleReject = (proposalId: string) => {
+    if (!showRejectReason) {
+      setShowRejectReason(true);
+      setValidationError(null);
+      return;
+    }
+    const reason = (comments[proposalId] || "").trim();
+    if (!reason) {
+      setValidationError("Please add a rejection reason before submitting.");
+      return;
+    }
+    setValidationError(null);
+    handleApproval(proposalId, false);
+  };
+
+  const proceedApprove = (proposalId: string) => {
+    setShowRejectReason(false);
+    setValidationError(null);
+    setComments((prev) => ({
+      ...prev,
+      [proposalId]: "",
+    }));
+    handleApproval(proposalId, true);
   };
 
   if (loading) {
@@ -250,7 +290,11 @@ export default function StudentUnionPage() {
         open={detailsOpen}
         onOpenChange={(open) => {
           setDetailsOpen(open);
-          if (!open) setSelectedProposal(null);
+          if (!open) {
+            setSelectedProposal(null);
+            setShowRejectReason(false);
+            setValidationError(null);
+          }
         }}
       >
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
@@ -442,27 +486,43 @@ export default function StudentUnionPage() {
                 )}
 
                 <section className="space-y-4 border-t border-border pt-4">
-                  <div>
-                    <Label htmlFor={`comments-${selectedProposal.id}`}>
-                      Comments (optional)
-                    </Label>
-                    <Textarea
-                      id={`comments-${selectedProposal.id}`}
-                      placeholder="Add any comments about this approval..."
-                      value={comments[selectedProposal.id] || ""}
-                      onChange={(e) =>
-                        setComments((prev) => ({
-                          ...prev,
-                          [selectedProposal.id]: e.target.value,
-                        }))
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-
+                  {showRejectReason ? (
+                    <div>
+                      <Label htmlFor={`comments-${selectedProposal.id}`}>
+                        Why are you rejecting this proposal?
+                      </Label>
+                      <Textarea
+                        id={`comments-${selectedProposal.id}`}
+                        placeholder="Add a clear rejection reason for the president."
+                        value={comments[selectedProposal.id] || ""}
+                        onChange={(e) =>
+                          setComments((prev) => ({
+                            ...prev,
+                            [selectedProposal.id]: e.target.value,
+                          }))
+                        }
+                        className="mt-2"
+                        required
+                      />
+                      {validationError ? (
+                        <p className="text-sm text-destructive mt-1">
+                          {validationError}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap gap-3">
                     <Button
-                      onClick={() => handleApproval(selectedProposal.id, true)}
+                      onClick={() => {
+                        if (
+                          showRejectReason &&
+                          comments[selectedProposal.id]?.trim()
+                        ) {
+                          setApproveConfirmOpen(true);
+                          return;
+                        }
+                        proceedApprove(selectedProposal.id);
+                      }}
                       disabled={approving?.proposalId === selectedProposal.id}
                       className="rounded-none"
                     >
@@ -473,14 +533,16 @@ export default function StudentUnionPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => handleApproval(selectedProposal.id, false)}
+                      onClick={() => handleReject(selectedProposal.id)}
                       disabled={approving?.proposalId === selectedProposal.id}
                       className="rounded-none"
                     >
                       {approving?.proposalId === selectedProposal.id &&
                       approving.action === "reject"
                         ? "Rejecting..."
-                        : "Reject"}
+                        : showRejectReason
+                          ? "Submit Rejection"
+                          : "Reject"}
                     </Button>
                   </div>
                 </section>
@@ -489,6 +551,28 @@ export default function StudentUnionPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={approveConfirmOpen} onOpenChange={setApproveConfirmOpen}>
+        <AlertDialogContent className="rounded-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard rejection reason?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Approving will discard the current rejection reason. Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!selectedProposal) return;
+                proceedApprove(selectedProposal.id);
+              }}
+            >
+              Continue & Approve
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

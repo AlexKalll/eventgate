@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { MenuIcon, Settings } from "lucide-react";
+import { Bell, MenuIcon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +23,7 @@ export function VPHeader({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { data: session, isPending } = useSession();
 
   const currentSessionEmail = session?.user?.email || userEmail;
@@ -33,6 +34,42 @@ export function VPHeader({ userEmail }: { userEmail: string }) {
       router.push("/");
     }
   }, [isPending, session, router]);
+
+  React.useEffect(() => {
+    if (isPending || session === null) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch("/api/notifications/vp?limit=10", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const body = await response.json();
+        setUnreadCount(Number(body?.unreadCount || 0));
+      } catch {}
+    };
+
+    fetchNotifications();
+    const intervalId = window.setInterval(fetchNotifications, 20 * 1000);
+    const handleNotificationsUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ audience?: string }>;
+      if (!customEvent.detail?.audience || customEvent.detail.audience === "vp") {
+        fetchNotifications();
+      }
+    };
+    window.addEventListener(
+      "eventgate:notifications-updated",
+      handleNotificationsUpdated as EventListener,
+    );
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener(
+        "eventgate:notifications-updated",
+        handleNotificationsUpdated as EventListener,
+      );
+    };
+  }, [isPending, session]);
 
   const handleSignOut = async () => {
     try {
@@ -91,7 +128,7 @@ export function VPHeader({ userEmail }: { userEmail: string }) {
                   : "text-gray-700 hover:text-[var(--aau-blue)]"
               }`}
             >
-              History
+              Reviewed Proposals
               {isActive(pathname, "/vp/approved") && (
                 <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
               )}
@@ -100,6 +137,21 @@ export function VPHeader({ userEmail }: { userEmail: string }) {
 
           {/* Right: Account and actions */}
           <div className="flex items-center gap-2 justify-end">
+            <Link href="/vp/notifications" className="block">
+              <Button
+                variant="secondary"
+                className="relative h-9 w-9 p-0 text-gray-700 border-none bg-white hover:bg-gray-100"
+                aria-label="Open notifications page"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[10px] leading-5 font-semibold">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                ) : null}
+              </Button>
+            </Link>
+
             <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -189,7 +241,23 @@ export function VPHeader({ userEmail }: { userEmail: string }) {
                         }
                         className="h-10 w-full justify-start rounded-none"
                       >
-                        History
+                        Reviewed Proposals
+                      </Button>
+                    </Link>
+                    <Link
+                      href="/vp/notifications"
+                      onClick={() => setMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button
+                        variant={
+                          isActive(pathname, "/vp/notifications")
+                            ? "default"
+                            : "ghost"
+                        }
+                        className="h-10 w-full justify-start rounded-none"
+                      >
+                        Notifications
                       </Button>
                     </Link>
                   </nav>

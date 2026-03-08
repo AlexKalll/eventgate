@@ -10,6 +10,52 @@ export const revalidate = 60;
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+const RESUBMITTABLE_STATUSES = new Set([
+  "LEAD_REJECTED",
+  "SU_REJECTED",
+  "DIRECTOR_REJECTED",
+  "RESUBMISSION_REQUIRED",
+]);
+
+function latestDate(dates: Array<Date | null | undefined>) {
+  const valid = dates.filter(Boolean) as Date[];
+  if (valid.length === 0) return null;
+  return new Date(Math.max(...valid.map((d) => d.getTime())));
+}
+
+function getLatestRejectionAt(proposal: any) {
+  const lead = (proposal.leadApprovals || [])
+    .filter((a: any) => !a.approved)
+    .map((a: any) => a.updatedAt);
+  const su = (proposal.reviews || [])
+    .filter((r: any) => r.reviewerRole === "STUDENT_UNION" && !r.approved)
+    .map((r: any) => r.updatedAt);
+  const director = (proposal.reviews || [])
+    .filter((r: any) => r.reviewerRole === "DIRECTOR" && !r.approved)
+    .map((r: any) => r.updatedAt);
+  return latestDate([...lead, ...su, ...director]);
+}
+
+function getLatestContentEditAt(proposal: any) {
+  return latestDate([
+    proposal.event?.updatedAt,
+    ...(proposal.event?.occurrences || []).map(
+      (o: any) => o.updatedAt || o.createdAt,
+    ),
+    ...(proposal.contacts || []).map((c: any) => c.updatedAt || c.createdAt),
+    ...(proposal.collaborators || []).map((c: any) => c.createdAt),
+    ...(proposal.guests || []).map((g: any) => g.createdAt),
+  ]);
+}
+
+function computeResubmissionReady(proposal: any) {
+  if (!RESUBMITTABLE_STATUSES.has(proposal.status)) return true;
+  const rejectionAt = getLatestRejectionAt(proposal);
+  const editAt = getLatestContentEditAt(proposal);
+  return Boolean(
+    rejectionAt && editAt && editAt.getTime() > rejectionAt.getTime(),
+  );
+}
 
 function jsonNoStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
@@ -278,6 +324,38 @@ export async function POST(request: Request) {
     if (clubLeads.length > 0) {
       const eventTitle = String(body.eventTitle || "Untitled Event");
       await Promise.all(
+        clubLeads.map(async (lead) => {
+          const recipientEmail = lead.email.toLowerCase();
+          const comment = "New proposal awaiting your review.";
+          const existing = await prisma.presidentNotification.findFirst({
+            where: {
+              recipientEmail,
+              proposalId: proposal.id,
+              stage: "LEAD",
+              decision: "APPROVED",
+              actorRole: "PRESIDENT",
+              comment,
+              deletedAt: null,
+            },
+            select: { id: true },
+          });
+          if (!existing) {
+            await prisma.presidentNotification.create({
+              data: {
+                recipientEmail,
+                proposalId: proposal.id,
+                eventTitle,
+                stage: "LEAD",
+                decision: "APPROVED",
+                actorRole: "PRESIDENT",
+                comment,
+              },
+            });
+          }
+        }),
+      );
+
+      await Promise.all(
         clubLeads.map((lead) =>
           sendProposalStatusEmail({
             to: lead.email,
@@ -410,7 +488,7 @@ export async function GET(request: Request) {
     const [proposals, total] = await Promise.all([
       prisma.proposal.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
         skip,
         take: limit,
         include: {
@@ -418,6 +496,10 @@ export async function GET(request: Request) {
           contacts: true,
           collaborators: true,
           guests: true,
+          reviews: {
+            where: { reviewerRole: { in: ["STUDENT_UNION", "DIRECTOR"] } },
+            select: { reviewerRole: true, approved: true, updatedAt: true },
+          },
           club: {
             select: { name: true },
           },
@@ -439,8 +521,13 @@ export async function GET(request: Request) {
       prisma.proposal.count({ where }),
     ]);
 
+    const proposalsWithResubmissionReady = proposals.map((proposal) => ({
+      ...proposal,
+      resubmissionReady: computeResubmissionReady(proposal),
+    }));
+
     return jsonNoStore({
-      proposals,
+      proposals: proposalsWithResubmissionReady,
       pagination: {
         page,
         limit,

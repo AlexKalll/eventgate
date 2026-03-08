@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmation } from "@/components/ui/confirmation-card";
+import { Trash2 } from "lucide-react";
 
 type ClubRole = "PRESIDENT" | "VP" | "SECRETARY";
 
@@ -25,10 +25,12 @@ function getClubLeadEmail(club: Club, role: ClubRole) {
 
 export function ExistingClubsSection({
   clubs,
+  loading = false,
   onEdit,
   onDelete,
 }: {
   clubs: Club[];
+  loading?: boolean;
   onEdit: (club: Club) => void;
   onDelete: (clubId: string) => void;
 }) {
@@ -41,7 +43,26 @@ export function ExistingClubsSection({
           <CardTitle className="font-serif text-gray-900"> ADDIS ABABA UNIVERSITY CLUBS</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          {clubs.length === 0 ? (
+          {loading ? (
+            <div className="grid gap-3 animate-pulse">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div key={`club-skeleton-${idx}`} className="border border-border p-3 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="h-4 w-48 bg-gray-200 rounded" />
+                    <div className="flex gap-2">
+                      <div className="h-8 w-14 bg-gray-200 rounded" />
+                      <div className="h-8 w-8 bg-gray-200 rounded" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-72 bg-gray-100 rounded" />
+                    <div className="h-3 w-64 bg-gray-100 rounded" />
+                    <div className="h-3 w-60 bg-gray-100 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : clubs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No clubs yet.</p>
           ) : (
             <div className="grid gap-3">
@@ -59,9 +80,11 @@ export function ExistingClubsSection({
                         Edit
                       </Button>
                       <Button
-                        className="rounded-none"
+                        className="rounded-none bg-white hover:bg-white "
                         variant="destructive"
                         size="sm"
+                        aria-label={`Delete ${c.name}`}
+                        title={`Delete ${c.name}`}
                         onClick={async () => {
                           const confirmed = await requestConfirmation(
                             "Delete Club",
@@ -78,7 +101,7 @@ export function ExistingClubsSection({
                           }
                         }}
                       >
-                        Delete
+                        <Trash2 className="h-4 w-4 bg-white hover:bg-white text-red-500" />
                       </Button>
                     </div>
                   </div>

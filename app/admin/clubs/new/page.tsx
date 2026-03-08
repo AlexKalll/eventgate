@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,6 @@ export default function AdminAddClubPage() {
 
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [toastOpen, setToastOpen] = useState(false);
-
-  useEffect(() => {
-    if (!message && !error) return;
-    setToastOpen(true);
-    const handle = setTimeout(() => setToastOpen(false), 4000);
-    return () => clearTimeout(handle);
-  }, [message, error]);
 
   const clear = () => {
     setClubName("");
@@ -80,8 +72,17 @@ export default function AdminAddClubPage() {
   };
 
   return (
-    <div className="grid gap-6">
-      <Card>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 space-y-6">
+      <Card className="rounded-none border border-gray-200">
+        <CardContent className="p-6">
+          <h1 className="text-2xl font-bold text-gray-900">Add Club</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Create a new club and optionally set leadership emails.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-none border border-gray-200">
         <CardHeader>
           <CardTitle>Add Club</CardTitle>
         </CardHeader>
@@ -115,9 +116,7 @@ export default function AdminAddClubPage() {
                     onChange={(e) => setPresidentEmail(e.target.value)}
                     placeholder="president@club.edu"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Receives status updates.
-                  </p>
+                
                 </div>
 
                 <div className="grid gap-2">
@@ -152,7 +151,7 @@ export default function AdminAddClubPage() {
             </div>
           </div>
 
-          <div className="rounded border border-dashed border-border bg-muted/30 p-4 space-y-3 text-sm text-muted-foreground">
+          <div className="rounded-none border border-dashed border-border bg-muted/30 p-4 space-y-3 text-sm text-muted-foreground">
             <p className="text-foreground font-medium">Tips</p>
             <ul className="list-disc pl-4 space-y-2">
               <li>Only the club name is required to create a club record.</li>
@@ -165,7 +164,7 @@ export default function AdminAddClubPage() {
         </CardContent>
       </Card>
 
-      {(message || error) && toastOpen && (
+      {(message || error) && (
         <div
           className="fixed bottom-4 right-4 z-50 w-88 max-w-[calc(100vw-2rem)]"
           role="status"
@@ -203,7 +202,10 @@ export default function AdminAddClubPage() {
                 variant="ghost"
                 className="h-8 w-8 p-0"
                 aria-label="Dismiss"
-                onClick={() => setToastOpen(false)}
+                onClick={() => {
+                  setMessage(null);
+                  setError(null);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>

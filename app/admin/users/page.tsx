@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -239,12 +239,29 @@ export default function AdminUsersPage() {
     }
   };
 
-  return (
-    <div className="grid gap-6">
-      <ConfirmationComponent />
-      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 grid gap-6 animate-pulse">
+        <Card className="rounded-none">
+          <CardHeader className="space-y-2">
+            <div className="h-5 w-24 bg-gray-200 rounded" />
+            <div className="h-10 w-72 bg-gray-100 rounded" />
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div key={`users-skeleton-${idx}`} className="h-14 bg-gray-100 rounded" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      <Card>
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 grid gap-6">
+      <ConfirmationComponent />
+
+      <Card className="rounded-none">
         <CardHeader>
           <CardTitle>Users</CardTitle>
         </CardHeader>
@@ -294,9 +311,11 @@ export default function AdminUsersPage() {
                     size="sm"
                     variant="ghost"
                     className="text-destructive"
+                    aria-label={`Delete ${u.email}`}
+                    title={`Delete ${u.email}`}
                     onClick={() => deleteUser(u)}
                   >
-                    Delete
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -352,12 +352,43 @@ export default function AdminSystemRolesPage() {
     }
   };
 
-  return (
-    <div className="grid gap-8">
-      <ConfirmationComponent />
-      {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 grid gap-8 animate-pulse">
+        <Card className="border-border/60 bg-muted/40 rounded-none">
+          <CardHeader className="space-y-2">
+            <div className="h-5 w-44 bg-gray-200 rounded" />
+            <div className="h-4 w-80 bg-gray-100 rounded" />
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-[2fr_1fr_auto]">
+              <div className="h-11 bg-gray-200 rounded" />
+              <div className="h-11 bg-gray-200 rounded" />
+              <div className="h-11 w-24 bg-gray-200 rounded" />
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="border-border/60 bg-muted/40">
+        <Card className="rounded-none">
+          <CardHeader className="space-y-2">
+            <div className="h-5 w-56 bg-gray-200 rounded" />
+            <div className="h-10 w-72 bg-gray-100 rounded" />
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={`roles-skeleton-${idx}`} className="h-12 bg-gray-100 rounded" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 grid gap-8">
+      <ConfirmationComponent />
+
+      <Card className="border-border/60 bg-muted/40 rounded-none">
         <CardHeader className="space-y-1">
           <CardTitle>Grant System Role</CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -401,7 +432,7 @@ export default function AdminSystemRolesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-none">
         <CardHeader className="space-y-2">
           <CardTitle>Existing System Role Grants</CardTitle>
           <div className="grid gap-2 md:w-1/2 lg:w-1/3">
@@ -501,9 +532,11 @@ export default function AdminSystemRolesPage() {
                               size="sm"
                               variant="ghost"
                               className="text-destructive"
+                              aria-label={`Delete ${g.email}`}
+                              title={`Delete ${g.email}`}
                               onClick={() => deleteGrant(g)}
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         )}
