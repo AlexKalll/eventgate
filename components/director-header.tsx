@@ -134,6 +134,19 @@ export function DirectorHeader({ userEmail }: { userEmail: string }) {
                 <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
               )}
             </Link>
+            <Link
+              href="/director/analytics"
+              className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
+                isActive(pathname, "/director/analytics")
+                  ? "text-[var(--aau-blue)]"
+                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+              }`}
+            >
+              Analytics
+              {isActive(pathname, "/director/analytics") && (
+                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+              )}
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2 justify-end">
@@ -257,6 +270,22 @@ export function DirectorHeader({ userEmail }: { userEmail: string }) {
                         className="h-10 w-full justify-start rounded-none"
                       >
                         Notifications
+                      </Button>
+                    </Link>
+                    <Link
+                      href="/director/analytics"
+                      onClick={() => setMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button
+                        variant={
+                          isActive(pathname, "/director/analytics")
+                            ? "default"
+                            : "ghost"
+                        }
+                        className="h-10 w-full justify-start rounded-none"
+                      >
+                        Analytics
                       </Button>
                     </Link>
                   </nav>

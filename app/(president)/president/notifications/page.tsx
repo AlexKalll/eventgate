@@ -165,7 +165,7 @@ export default function PresidentNotificationsPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-8 px-3 text-[13px] text-[var(--aau-blue)] hover:text-[var(--aau-blue)]"
+                  className="h-8 px-3 text-[13px] text-(--aau-blue) hover:text-(--aau-blue)"
                   onClick={handleMarkAllRead}
                 >
                   Mark all as read
