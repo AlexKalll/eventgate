@@ -49,12 +49,29 @@ function MetricCard({
   value: number;
 }) {
   return (
+    <div className="flex items-center justify-between gap-3 border-r border-gray-200 px-4 py-2 last:border-r-0">
+      <p className="text-[11px] font-medium tracking-wide text-gray-500 uppercase">
+        {label}
+      </p>
+      <p className="text-lg font-semibold text-gray-900">{value.toLocaleString()}</p>
+    </div>
+  );
+}
+
+function CompactMetricCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
     <Card className="rounded-none shadow-none border border-gray-200">
-      <CardContent className="p-5">
-        <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+      <CardContent className="px-3 py-2">
+        <p className="text-[11px] font-medium tracking-wide text-gray-500 uppercase truncate">
           {label}
         </p>
-        <p className="mt-2 text-3xl font-semibold text-gray-900">
+        <p className="mt-1 text-xl font-semibold text-gray-900">
           {value.toLocaleString()}
         </p>
       </CardContent>
@@ -90,6 +107,7 @@ export default function DirectorAnalyticsPage() {
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedClubId, setSelectedClubId] = useState("");
+  const [selectedEventId, setSelectedEventId] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -170,6 +188,11 @@ export default function DirectorAnalyticsPage() {
   const clubs = useMemo(() => data?.clubs || [], [data]);
   const selectedClub =
     clubs.find((club) => club.clubId === selectedClubId) || clubs[0] || null;
+  const selectedEvent = selectedClub
+    ? selectedClub.events.find((event) => event.proposalId === selectedEventId) ||
+      selectedClub.events[0] ||
+      null
+    : null;
 
   useEffect(() => {
     if (!clubs.length) {
@@ -181,6 +204,19 @@ export default function DirectorAnalyticsPage() {
       setSelectedClubId(clubs[0].clubId);
     }
   }, [clubs, selectedClubId]);
+
+  useEffect(() => {
+    if (!selectedClub || selectedClub.events.length === 0) {
+      setSelectedEventId("");
+      return;
+    }
+    const exists = selectedClub.events.some(
+      (event) => event.proposalId === selectedEventId,
+    );
+    if (!exists) {
+      setSelectedEventId(selectedClub.events[0].proposalId);
+    }
+  }, [selectedClub, selectedEventId]);
 
   const exportCsv = () => {
     if (!csvRows.length || !data) return;
@@ -274,23 +310,19 @@ export default function DirectorAnalyticsPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Total Proposals"
-          value={totals.totalProposals}
-        />
-        <MetricCard
-          label="Approved Events"
-          value={totals.approvedEvents}
-        />
-        <MetricCard
-          label="Total Rejections"
-          value={totals.totalRejections}
-        />
-        <MetricCard
-          label="Pending Review"
-          value={totals.totalPending}
-        />
+      <div className="mt-4 hidden md:block border border-gray-200 bg-white">
+        <div className="grid grid-cols-4">
+          <MetricCard label="Total Proposals" value={totals.totalProposals} />
+          <MetricCard label="Approved Events" value={totals.approvedEvents} />
+          <MetricCard label="Total Rejections" value={totals.totalRejections} />
+          <MetricCard label="Pending Review" value={totals.totalPending} />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 grid-cols-2 md:hidden">
+        <CompactMetricCard label="Total Proposals" value={totals.totalProposals} />
+        <CompactMetricCard label="Approved Events" value={totals.approvedEvents} />
+        <CompactMetricCard label="Total Rejections" value={totals.totalRejections} />
+        <CompactMetricCard label="Pending Review" value={totals.totalPending} />
       </div>
 
       <div className="mt-6">
@@ -304,108 +336,133 @@ export default function DirectorAnalyticsPage() {
                 No proposals found for the selected filters.
               </p>
             ) : (
-              <div className="space-y-3">
-                <div className="overflow-x-auto border border-gray-200">
-                  <table className="min-w-[640px] w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium">Club</th>
-                        <th className="px-3 py-2 text-right font-medium">Total</th>
-                        <th className="px-3 py-2 text-right font-medium">Approved</th>
-                        <th className="px-3 py-2 text-right font-medium">Pending</th>
-                        <th className="px-3 py-2 text-right font-medium">Rejected</th>
-                        <th className="px-3 py-2 text-right font-medium">Approval Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {clubs.map((club) => {
-                        const total = Math.max(1, club.totalProposals);
-                        const approvalRate = Math.round(
-                          (club.approved / total) * 100,
-                        );
-                        return (
-                          <tr
-                            key={club.clubId}
-                            className={`border-t border-gray-200 align-middle cursor-pointer transition-colors ${
-                              selectedClub?.clubId === club.clubId
-                                ? "bg-blue-50/60"
-                                : "hover:bg-gray-50"
-                            }`}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setSelectedClubId(club.clubId)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                setSelectedClubId(club.clubId);
-                              }
-                            }}
-                          >
-                            <td className="px-3 py-3 font-medium text-gray-900">
-                              {club.clubName}
-                            </td>
-                            <td className="px-3 py-3 text-right text-gray-700">
-                              {club.totalProposals}
-                            </td>
-                            <td className="px-3 py-3 text-right text-gray-700">
-                              {club.approved}
-                            </td>
-                            <td className="px-3 py-3 text-right text-gray-700">
-                              {club.pending}
-                            </td>
-                            <td className="px-3 py-3 text-right text-gray-700">
-                              {club.rejected}
-                            </td>
-                            <td className="px-3 py-3 text-right font-medium text-gray-900">
-                              {approvalRate}%
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              <div className="grid items-start gap-4 lg:grid-cols-12">
+                <div className="lg:col-span-7 border border-gray-200 h-[620px]">
+                  <div className="h-full overflow-auto">
+                    <table className="min-w-[640px] w-full text-sm">
+                      <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium">Club</th>
+                          <th className="px-3 py-2 text-right font-medium">Total</th>
+                          <th className="px-3 py-2 text-right font-medium">Approved</th>
+                          <th className="px-3 py-2 text-right font-medium">Pending</th>
+                          <th className="px-3 py-2 text-right font-medium">Rejected</th>
+                          <th className="px-3 py-2 text-right font-medium">Approval Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clubs.map((club) => {
+                          const total = Math.max(1, club.totalProposals);
+                          const approvalRate = Math.round(
+                            (club.approved / total) * 100,
+                          );
+                          return (
+                            <tr
+                              key={club.clubId}
+                              className={`border-t border-gray-200 align-middle cursor-pointer transition-colors ${
+                                selectedClub?.clubId === club.clubId
+                                  ? "bg-blue-50/60"
+                                  : "hover:bg-gray-50"
+                              }`}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => setSelectedClubId(club.clubId)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setSelectedClubId(club.clubId);
+                                }
+                              }}
+                            >
+                              <td className="px-3 py-3 font-medium text-gray-900">
+                                {club.clubName}
+                              </td>
+                              <td className="px-3 py-3 text-right text-gray-700">
+                                {club.totalProposals}
+                              </td>
+                              <td className="px-3 py-3 text-right text-gray-700">
+                                {club.approved}
+                              </td>
+                              <td className="px-3 py-3 text-right text-gray-700">
+                                {club.pending}
+                              </td>
+                              <td className="px-3 py-3 text-right text-gray-700">
+                                {club.rejected}
+                              </td>
+                              <td className="px-3 py-3 text-right font-medium text-gray-900">
+                                {approvalRate}%
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {selectedClub ? (
-                  <div className="border border-gray-200">
+                  <div className="lg:col-span-5 border border-gray-200 lg:sticky lg:top-24 self-start h-[620px] flex flex-col">
                     <div className="border-b border-gray-200 bg-gray-50 px-3 py-2">
                       <p className="text-sm font-medium text-gray-900">
                         {selectedClub.clubName} proposals in {data?.academicYear}
                       </p>
                     </div>
-                    <div className="max-h-72 overflow-y-auto">
+                    <div className="h-full overflow-hidden">
                       {selectedClub.events.length === 0 ? (
                         <p className="px-3 py-3 text-sm text-gray-500">
                           No proposal events found for this club in the selected year.
                         </p>
                       ) : (
-                        selectedClub.events.map((event) => (
-                          <div
-                            key={event.proposalId}
-                            className="border-b border-gray-100 px-3 py-3 last:border-b-0"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <p className="font-medium text-gray-900">{event.title}</p>
-                              <p className="text-xs font-medium text-gray-600">
-                                {event.status.replaceAll("_", " ")}
+                        <div className="grid h-full grid-rows-[170px,1fr]">
+                          <div className="overflow-y-auto border-b border-gray-200">
+                            {selectedClub.events.map((event) => (
+                              <button
+                                key={event.proposalId}
+                                type="button"
+                                className={`w-full border-b border-gray-100 px-3 py-2 text-left last:border-b-0 ${
+                                  selectedEvent?.proposalId === event.proposalId
+                                    ? "bg-blue-50"
+                                    : "hover:bg-gray-50"
+                                }`}
+                                onClick={() => setSelectedEventId(event.proposalId)}
+                              >
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {event.title}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(event.createdAt).toLocaleDateString()}
+                                </p>
+                              </button>
+                            ))}
+                          </div>
+
+                          {selectedEvent ? (
+                            <div className="m-3 border border-blue-200 bg-blue-50/50 p-4 overflow-y-auto">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <p className="text-base font-semibold text-gray-900">
+                                  {selectedEvent.title}
+                                </p>
+                                <p className="text-sm font-medium text-blue-700">
+                                  {selectedEvent.status.replaceAll("_", " ")}
+                                </p>
+                              </div>
+                              <p className="mt-2 text-sm text-gray-600">
+                                Submitted:{" "}
+                                {new Date(selectedEvent.createdAt).toLocaleDateString()}
+                              </p>
+                              <p className="mt-3 text-sm leading-6 text-gray-800 whitespace-pre-wrap">
+                                {selectedEvent.description || "No description provided."}
+                              </p>
+                              <p className="mt-3 text-sm text-gray-600">
+                                Location: {selectedEvent.location}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Time: {new Date(selectedEvent.startTime).toLocaleString()} -{" "}
+                                {new Date(selectedEvent.endTime).toLocaleString()}
                               </p>
                             </div>
-                            <p className="mt-1 text-xs text-gray-600">
-                              Submitted:{" "}
-                              {new Date(event.createdAt).toLocaleDateString()}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-700 whitespace-pre-wrap">
-                              {event.description || "No description provided."}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              Location: {event.location}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              Time: {new Date(event.startTime).toLocaleString()} -{" "}
-                              {new Date(event.endTime).toLocaleString()}
-                            </p>
-                          </div>
-                        ))
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   </div>
