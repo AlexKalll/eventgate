@@ -120,18 +120,23 @@ export default function SignUpPage() {
         }
       }
 
-      const result = await signUpEmail({
-        email,
-        password,
-        name: fullName,
-        ...(mode === "club_lead"
+      const payload: Parameters<typeof signUpEmail>[0] =
+        mode === "club_lead"
           ? {
+              email,
+              password,
+              name: fullName,
               clubId: selectedClubId,
-              clubRole: selectedRole,
+              clubRole: selectedRole as "PRESIDENT" | "VP" | "SECRETARY",
               phoneNumber: phoneNumber || undefined,
             }
-          : {}),
-      });
+          : {
+              email,
+              password,
+              name: fullName,
+            };
+
+      const result = await signUpEmail(payload);
 
       // Check if signup failed or returned an error
       if (result.error) {
