@@ -8,15 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { signIn, useSession, getSession, signOut } from "@/lib/auth-client";
+import { signIn, getSession, signOut } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-svh items-center justify-center p-6 text-sm text-muted-foreground">
-          Loading...
+        <div className="min-h-svh bg-gray-50">
+          <div className="container mx-auto px-4 py-10 lg:px-8">
+            <div className="mx-auto h-96 w-full max-w-md animate-pulse border border-gray-200 bg-white" />
+          </div>
         </div>
       }
     >
@@ -45,9 +47,6 @@ function LoginContent() {
     }
   }, [verified]);
 
-  // No auto-redirect on visit; redirects are handled after explicit login
-  const { data: session, isPending } = useSession();
-
   const getRolesWithRetry = async () => {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -67,6 +66,21 @@ function LoginContent() {
       }
     }
     return { systemRoles: [] as string[], clubRoles: [] as string[] };
+  };
+
+  const extractSessionUser = (sessionData: unknown) => {
+    if (!sessionData || typeof sessionData !== "object") return null;
+    const root = sessionData as Record<string, unknown>;
+    if (root.user && typeof root.user === "object") {
+      return root.user as Record<string, unknown>;
+    }
+    if (root.session && typeof root.session === "object") {
+      const nestedUser = (root.session as Record<string, unknown>).user;
+      if (nestedUser && typeof nestedUser === "object") {
+        return nestedUser as Record<string, unknown>;
+      }
+    }
+    return null;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -104,9 +118,10 @@ function LoginContent() {
       // Check session to decide where to go
       const res = await getSession();
       const data = "data" in res ? res.data : null;
-      const user = (data as any)?.user ?? (data as any)?.session?.user;
+      const user = extractSessionUser(data);
+      const emailVerified = Boolean(user?.emailVerified);
 
-      if (user?.emailVerified) {
+      if (emailVerified) {
         const { systemRoles, clubRoles } = await getRolesWithRetry();
 
         if (systemRoles.includes("ADMIN")) {
@@ -159,7 +174,7 @@ function LoginContent() {
       } else {
         setError("Invalid email or password.");
       }
-    } catch (err: any) {
+    } catch {
       // Check if user exists but is unverified
       try {
         const checkRes = await fetch("/api/auth/check-user", {
@@ -187,10 +202,17 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <Card className="shadow-none border-t border-r border-l border-b rounded-none">
-          <CardContent>
+    <div className="min-h-svh bg-gray-50">
+      <div className="container mx-auto px-4 py-10 lg:px-8">
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-5 text-center">
+            <h1 className="text-2xl font-semibold text-gray-900">Sign In</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Access your EventGate dashboard.
+            </p>
+          </div>
+          <Card className="shadow-none border border-gray-200 rounded-none">
+            <CardContent className="p-5">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -224,23 +246,24 @@ function LoginContent() {
               )}
               <Button
                 type="submit"
-                className="w-full cursor-pointer"
+                className="w-full cursor-pointer rounded-none bg-[var(--aau-blue)] hover:bg-[var(--aau-blue)]/90"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
-              <div className="text-center text-sm text-muted-foreground">
+              <div className="text-center text-sm text-gray-500">
                 Don&apos;t have an account?{" "}
                 <Link
                   href="/sign-up"
-                  className="underline underline-offset-4 hover:text-foreground"
+                  className="underline underline-offset-4 text-[var(--aau-blue)] hover:text-[var(--aau-blue)]/80"
                 >
                   Sign up
                 </Link>
               </div>
             </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
