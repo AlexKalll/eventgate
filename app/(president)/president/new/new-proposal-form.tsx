@@ -626,6 +626,8 @@ export default function NewProposalForm({ userEmail }: { userEmail: string }) {
                               id={`location-${idx}`}
                               disabled
                               placeholder="Loading locations..."
+                              value=""
+                              readOnly
                               className="rounded-lg border-gray-200"
                             />
                           ) : locations.length > 0 ? (
