@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { Button } from "@/components/ui/button";
-import { signUp, getSession, signOut, useSession } from "@/lib/auth-client";
+import { signUp, getSession, signOut } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -40,9 +40,30 @@ export default function SignUpPage() {
   const passwordsMatch = password.length > 0 && password === repeatPassword;
   const passwordTooShort = password.length > 0 && password.length < 8;
   const showMismatch = repeatPassword.length > 0 && !passwordsMatch;
-
-  // Do not auto-redirect away from sign-up; middleware protects private routes
-  const { data: session, isPending } = useSession();
+  const signUpEmail = signUp.email as (payload: {
+    email: string;
+    password: string;
+    name: string;
+    clubId?: string;
+    clubRole?: "PRESIDENT" | "VP" | "SECRETARY";
+    phoneNumber?: string;
+  }) => Promise<{ error?: { message?: string } }>;
+  const getErrorMessage = (err: unknown) => {
+    if (err && typeof err === "object") {
+      const e = err as Record<string, unknown>;
+      const direct = typeof e.message === "string" ? e.message : null;
+      const nestedData =
+        e.data && typeof e.data === "object"
+          ? (e.data as Record<string, unknown>)
+          : null;
+      const nested =
+        nestedData && typeof nestedData.message === "string"
+          ? nestedData.message
+          : null;
+      return nested || direct || "Something went wrong";
+    }
+    return "Something went wrong";
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,8 +78,8 @@ export default function SignUpPage() {
         setClubs(list);
         setSelectedClubId((prev) => prev || list[0]?.id || "");
         setSelectedRole((prev) => prev || "PRESIDENT");
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === "AbortError") return;
         setClubs([]);
       }
     })();
@@ -99,7 +120,7 @@ export default function SignUpPage() {
         }
       }
 
-      const result = await (signUp.email as any)({
+      const result = await signUpEmail({
         email,
         password,
         name: fullName,
@@ -168,10 +189,9 @@ export default function SignUpPage() {
 
       // Redirect to verification page
       router.push("/verify?email=" + encodeURIComponent(email));
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Surface better-auth error response when available
-      const message =
-        err?.data?.message || err?.message || "Something went wrong";
+      const message = getErrorMessage(err);
       if (
         /restricted|not registered|not allowed|club leads must select|does not match|select their club/i.test(
           message,
@@ -273,17 +293,26 @@ export default function SignUpPage() {
   );
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6">
-      <div className="w-full max-w-3xl">
+    <div className="min-h-svh bg-gray-50">
+      <div className="container mx-auto px-4 py-10 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="mb-5 text-center">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Create Account
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Register to submit or review university event proposals.
+            </p>
+          </div>
         {/* Mode selector tabs at the top */}
-        <div className="grid grid-cols-2 mb-6">
+        <div className="grid grid-cols-2 mb-6 border border-gray-200 bg-white">
           <button
             type="button"
             onClick={() => setMode("club_lead")}
             className={
               mode === "club_lead"
-                ? "h-10 text-sm font-medium text-foreground border-b-2 border-foreground"
-                : "h-10 text-sm text-muted-foreground border-b border-border"
+                ? "h-10 text-sm font-medium text-[var(--aau-blue)] border-b-2 border-[var(--aau-blue)] bg-blue-50/40"
+                : "h-10 text-sm text-gray-500 border-b border-gray-200 bg-white"
             }
           >
             Club Lead
@@ -293,8 +322,8 @@ export default function SignUpPage() {
             onClick={() => setMode("reviewer")}
             className={
               mode === "reviewer"
-                ? "h-10 text-sm font-medium text-foreground border-b-2 border-foreground"
-                : "h-10 text-sm text-muted-foreground border-b border-border"
+                ? "h-10 text-sm font-medium text-[var(--aau-blue)] border-b-2 border-[var(--aau-blue)] bg-blue-50/40"
+                : "h-10 text-sm text-gray-500 border-b border-gray-200 bg-white"
             }
           >
             Reviewer
@@ -303,8 +332,8 @@ export default function SignUpPage() {
 
         {/* Club Lead Card */}
         {mode === "club_lead" && (
-          <Card className="rounded-none shadow-none">
-            <CardContent>
+          <Card className="rounded-none shadow-none border border-gray-200">
+            <CardContent className="p-5">
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid gap-1">
                   <CardTitle className="text-lg">Club Lead Sign Up</CardTitle>
@@ -369,16 +398,16 @@ export default function SignUpPage() {
 
                 <Button
                   type="submit"
-                  className="w-full cursor-pointer"
+                  className="w-full cursor-pointer rounded-none bg-[var(--aau-blue)] hover:bg-[var(--aau-blue)]/90"
                   disabled={isLoading}
                 >
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
-                <div className="text-center text-sm text-muted-foreground">
+                <div className="text-center text-sm text-gray-500">
                   Already have an account?{" "}
                   <Link
                     href="/login"
-                    className="underline underline-offset-4 hover:text-foreground"
+                    className="underline underline-offset-4 text-[var(--aau-blue)] hover:text-[var(--aau-blue)]/80"
                   >
                     Sign in
                   </Link>
@@ -390,8 +419,8 @@ export default function SignUpPage() {
 
         {/* Reviewer Card */}
         {mode === "reviewer" && (
-          <Card className="rounded-none shadow-none">
-            <CardContent>
+          <Card className="rounded-none shadow-none border border-gray-200">
+            <CardContent className="p-5">
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="grid gap-1">
                   <CardTitle className="text-lg">Reviewer Sign Up</CardTitle>
@@ -407,16 +436,16 @@ export default function SignUpPage() {
 
                 <Button
                   type="submit"
-                  className="w-full cursor-pointer"
+                  className="w-full cursor-pointer rounded-none bg-[var(--aau-blue)] hover:bg-[var(--aau-blue)]/90"
                   disabled={isLoading}
                 >
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
-                <div className="text-center text-sm text-muted-foreground">
+                <div className="text-center text-sm text-gray-500">
                   Already have an account?{" "}
                   <Link
                     href="/login"
-                    className="underline underline-offset-4 hover:text-foreground"
+                    className="underline underline-offset-4 text-[var(--aau-blue)] hover:text-[var(--aau-blue)]/80"
                   >
                     Sign in
                   </Link>
@@ -425,6 +454,7 @@ export default function SignUpPage() {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
     </div>
   );

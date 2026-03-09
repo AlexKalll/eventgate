@@ -37,12 +37,6 @@ export function AuthHeader({ userEmail }: { userEmail: string }) {
   // doesn't flash to authenticated state before redirect completes
   const showAuthenticatedUI = currentSessionEmail && !isAuthPage;
 
-  const currentSection = (() => {
-    if (pathname === "/login") return "Sign In";
-    if (pathname === "/sign-up") return "Create Account";
-    return "Authentication";
-  })();
-
   // Don't auto-redirect on auth pages - let users see the login/signup forms
   // React.useEffect(() => {
   //   if (session === null) {
@@ -60,51 +54,60 @@ export function AuthHeader({ userEmail }: { userEmail: string }) {
   };
 
   return (
-    <header
-      className="sticky top-0 z-30 w-full border-b border-border bg-background"
-      role="banner"
-    >
-      <div className="w-full bg-slate-900 text-white">
-        <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link href="/" className="font-semibold tracking-wide">
-              EventGate
+    <header role="banner" className="sticky top-0 z-30 w-full">
+      <div className="w-full bg-white text-gray-900 border-b border-gray-200">
+        <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-2 lg:px-8">
+          <div className="flex items-center min-w-0">
+            <Link href="/" className="flex items-center gap-3 group min-w-0">
+              <img
+                src="/aauLogo.png"
+                alt="AAU Logo"
+                className="h-12 w-auto object-contain"
+              />
+              <div className="h-10 w-0.5 mx-1 bg-cyan-700" />
+              <div className="min-w-0">
+                <div className="font-bold text-lg sm:text-xl tracking-wide leading-tight">
+                  EventGate
+                </div>
+                <div className="text-[11px] sm:text-xs text-gray-500 tracking-wider uppercase">
+                  Addis Ababa University
+                </div>
+              </div>
             </Link>
-            <div className="hidden sm:block h-5 w-px bg-white/20" />
-            <div className="min-w-0">
-              <div className="text-sm font-medium leading-5">
-                Event Proposal Portal
-              </div>
-              <div className="hidden md:block text-xs text-white/70 truncate">
-                {currentSection}
-              </div>
-            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-2">
-              <Link href="/login" onClick={() => setMenuOpen(false)}>
-                <Button
-                  variant={isActive(pathname, "/login") ? "default" : "outline"}
-                  className="h-9 bg-white text-slate-900 hover:bg-white/90"
-                >
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/sign-up" onClick={() => setMenuOpen(false)}>
-                <Button
-                  variant={
-                    isActive(pathname, "/sign-up") ? "default" : "outline"
-                  }
-                  className="h-9 bg-white text-slate-900 hover:bg-white/90"
-                >
-                  Create Account
-                </Button>
-              </Link>
-            </div>
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-2">
+            <Link
+              href="/login"
+              className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
+                isActive(pathname, "/login")
+                  ? "text-[var(--aau-blue)]"
+                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+              }`}
+            >
+              Sign In
+              {isActive(pathname, "/login") && (
+                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+              )}
+            </Link>
+            <Link
+              href="/sign-up"
+              className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
+                isActive(pathname, "/sign-up")
+                  ? "text-[var(--aau-blue)]"
+                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+              }`}
+            >
+              Create Account
+              {isActive(pathname, "/sign-up") && (
+                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+              )}
+            </Link>
+          </nav>
 
+          <div className="flex items-center gap-2">
             {showAuthenticatedUI && (
-              <div className="hidden lg:block text-xs text-white/70 truncate max-w-md">
+              <div className="hidden lg:block text-xs text-gray-500 truncate max-w-md">
                 {currentSessionEmail}
               </div>
             )}
@@ -112,7 +115,7 @@ export function AuthHeader({ userEmail }: { userEmail: string }) {
               <DialogTrigger asChild>
                 <Button
                   variant="secondary"
-                  className="md:hidden h-9 w-9 p-0 bg-white text-slate-900 hover:bg-white/90"
+                  className="md:hidden h-9 w-9 p-0 bg-gray-100 text-gray-700 hover:bg-gray-200"
                   aria-label="Open auth menu"
                 >
                   <MenuIcon className="h-5 w-5" />
@@ -120,12 +123,15 @@ export function AuthHeader({ userEmail }: { userEmail: string }) {
               </DialogTrigger>
               <DialogContent className="fixed right-0 top-0 left-auto bottom-0 h-dvh w-[20rem] max-w-[calc(100%-3rem)] translate-x-0 translate-y-0 rounded-none p-0 sm:max-w-[20rem]">
                 <div className="flex h-full flex-col">
-                  <div className="border-b border-border bg-slate-900 px-4 py-4 text-white">
+                  <div
+                    className="border-b border-border px-4 py-4 text-white"
+                    style={{ backgroundColor: "var(--aau-blue)" }}
+                  >
                     <DialogTitle className="text-sm font-semibold tracking-wide">
                       Auth Menu
                     </DialogTitle>
                     {showAuthenticatedUI && (
-                      <div className="mt-1 text-xs text-white/70 truncate">
+                      <div className="mt-1 text-xs text-white/80 truncate">
                         {currentSessionEmail}
                       </div>
                     )}
@@ -182,7 +188,7 @@ export function AuthHeader({ userEmail }: { userEmail: string }) {
               <Button
                 onClick={handleSignOut}
                 variant="secondary"
-                className="hidden md:inline-flex h-9 bg-white text-slate-900 hover:bg-white/90"
+                className="hidden md:inline-flex h-9 border-none bg-white text-gray-700 hover:bg-gray-100"
               >
                 Sign out
               </Button>
