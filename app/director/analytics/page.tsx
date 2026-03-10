@@ -477,7 +477,7 @@ export default function DirectorAnalyticsPage() {
                       ) : (
                         <div className="grid h-full grid-rows-[170px,1fr]">
                           <div className="overflow-y-auto border-b border-gray-200">
-                            {selectedClub.events.map((event) => (
+                            {selectedClub.events.map((event, idx) => (
                               <button
                                 key={event.proposalId}
                                 type="button"
@@ -488,12 +488,19 @@ export default function DirectorAnalyticsPage() {
                                 }`}
                                 onClick={() => setSelectedEventId(event.proposalId)}
                               >
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                  {event.title}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {new Date(event.createdAt).toLocaleDateString()}
-                                </p>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-xs font-semibold text-gray-700">
+                                    {idx + 1}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {event.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(event.createdAt).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
                               </button>
                             ))}
                           </div>
