@@ -13,7 +13,34 @@ export async function GET(request: Request) {
     include: { roleGrants: { orderBy: { role: "asc" } } },
   });
 
-  return NextResponse.json({ clubs });
+  const leadEmails = Array.from(
+    new Set(
+      clubs
+        .flatMap((club) => club.roleGrants.map((grant) => grant.email))
+        .filter(Boolean),
+    ),
+  );
+
+  const users = leadEmails.length
+    ? await prisma.user.findMany({
+        where: { email: { in: leadEmails } },
+        select: { email: true, phoneNumber: true },
+      })
+    : [];
+
+  const phoneByEmail = new Map(
+    users.map((user) => [user.email.toLowerCase(), user.phoneNumber || null]),
+  );
+
+  const clubsWithPhones = clubs.map((club) => ({
+    ...club,
+    roleGrants: club.roleGrants.map((grant) => ({
+      ...grant,
+      phoneNumber: phoneByEmail.get(grant.email.toLowerCase()) || null,
+    })),
+  }));
+
+  return NextResponse.json({ clubs: clubsWithPhones });
 }
 
 export async function POST(request: Request) {

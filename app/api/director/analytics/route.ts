@@ -30,10 +30,16 @@ type ClubMetric = {
     endTime: Date;
   }>;
   leadership: {
-    president: string | null;
-    vicePresident: string | null;
-    secretary: string | null;
+    president: LeadContact;
+    vicePresident: LeadContact;
+    secretary: LeadContact;
   };
+};
+
+type LeadContact = {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 const REJECTED_STATUSES: ProposalStatus[] = [
@@ -198,11 +204,50 @@ export async function GET(request: Request) {
         select: {
           role: true,
           name: true,
+          email: true,
+          mobile: true,
         },
       },
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const clubIds = Array.from(new Set(proposals.map((p) => p.clubId)));
+  const roleGrants = clubIds.length
+    ? await prisma.clubRoleGrant.findMany({
+        where: { clubId: { in: clubIds } },
+        select: { clubId: true, role: true, email: true },
+      })
+    : [];
+
+  const grantByClubRole = new Map(
+    roleGrants.map((grant) => [
+      `${grant.clubId}:${grant.role}`,
+      grant.email,
+    ]),
+  );
+
+  const contactEmails = proposals
+    .flatMap((proposal) => proposal.contacts)
+    .map((contact) => String(contact.email || "").trim().toLowerCase())
+    .filter(Boolean);
+
+  const grantEmails = roleGrants
+    .map((grant) => String(grant.email || "").trim().toLowerCase())
+    .filter(Boolean);
+
+  const leadEmails = Array.from(new Set([...contactEmails, ...grantEmails]));
+
+  const users = leadEmails.length
+    ? await prisma.user.findMany({
+        where: { email: { in: leadEmails } },
+        select: { email: true, name: true, phoneNumber: true },
+      })
+    : [];
+
+  const userByEmail = new Map(
+    users.map((user) => [user.email.toLowerCase(), user]),
+  );
 
   const clubMap = new Map<
     string,
@@ -234,9 +279,9 @@ export async function GET(request: Request) {
       pending: 0,
       events: [],
       leadership: {
-        president: null,
-        vicePresident: null,
-        secretary: null,
+        president: { name: null, email: null, phone: null },
+        vicePresident: { name: null, email: null, phone: null },
+        secretary: { name: null, email: null, phone: null },
       },
       _leadershipUpdatedAt: {
         president: null,
@@ -264,28 +309,60 @@ export async function GET(request: Request) {
     }
 
     for (const contact of proposal.contacts) {
-      const name = String(contact.name || "").trim();
-      if (!name) continue;
+      const rawName = String(contact.name || "").trim();
+      const rawEmail = String(contact.email || "").trim().toLowerCase();
+      const rawPhone = String(contact.mobile || "").trim();
+      if (!rawName && !rawEmail && !rawPhone) continue;
+
+      const roleKey =
+        contact.role === "PRESIDENT"
+          ? "PRESIDENT"
+          : contact.role === "VICE_PRESIDENT"
+            ? "VP"
+            : "SECRETARY";
+      const grantEmail = grantByClubRole.get(
+        `${proposal.clubId}:${roleKey}`,
+      )?.toLowerCase();
+      const resolvedEmail = rawEmail || grantEmail || null;
+      const user = resolvedEmail ? userByEmail.get(resolvedEmail) : null;
+      const resolvedName =
+        rawName || (user?.name ? String(user.name).trim() : "") || null;
+      const resolvedPhone =
+        rawPhone ||
+        (user?.phoneNumber ? String(user.phoneNumber).trim() : "") ||
+        null;
       if (
         contact.role === "PRESIDENT" &&
         (!existing._leadershipUpdatedAt.president ||
           proposal.createdAt > existing._leadershipUpdatedAt.president)
       ) {
-        existing.leadership.president = name;
+        existing.leadership.president = {
+          name: resolvedName,
+          email: resolvedEmail,
+          phone: resolvedPhone,
+        };
         existing._leadershipUpdatedAt.president = proposal.createdAt;
       } else if (
         contact.role === "VICE_PRESIDENT" &&
         (!existing._leadershipUpdatedAt.vicePresident ||
           proposal.createdAt > existing._leadershipUpdatedAt.vicePresident)
       ) {
-        existing.leadership.vicePresident = name;
+        existing.leadership.vicePresident = {
+          name: resolvedName,
+          email: resolvedEmail,
+          phone: resolvedPhone,
+        };
         existing._leadershipUpdatedAt.vicePresident = proposal.createdAt;
       } else if (
         contact.role === "SECRETARY" &&
         (!existing._leadershipUpdatedAt.secretary ||
           proposal.createdAt > existing._leadershipUpdatedAt.secretary)
       ) {
-        existing.leadership.secretary = name;
+        existing.leadership.secretary = {
+          name: resolvedName,
+          email: resolvedEmail,
+          phone: resolvedPhone,
+        };
         existing._leadershipUpdatedAt.secretary = proposal.createdAt;
       }
     }

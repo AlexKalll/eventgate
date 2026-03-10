@@ -17,6 +17,7 @@ type Club = {
     id: string;
     clubId: string;
     email: string;
+    phoneNumber?: string | null;
     role: ClubRole;
   }>;
 };

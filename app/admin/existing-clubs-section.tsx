@@ -14,13 +14,19 @@ type Club = {
     id: string;
     clubId: string;
     email: string;
+    phoneNumber?: string | null;
     role: ClubRole;
   }>;
 };
 
 function getClubLeadEmail(club: Club, role: ClubRole) {
   const grant = (club.roleGrants || []).find((g) => g.role === role);
-  return grant?.email || "—";
+  return grant?.email || "-";
+}
+
+function getClubLeadPhone(club: Club, role: ClubRole) {
+  const grant = (club.roleGrants || []).find((g) => g.role === role);
+  return grant?.phoneNumber || "-";
 }
 
 export function ExistingClubsSection({
@@ -40,13 +46,18 @@ export function ExistingClubsSection({
       <ConfirmationComponent />
       <Card>
         <CardHeader>
-          <CardTitle className="font-serif text-gray-900"> ADDIS ABABA UNIVERSITY CLUBS</CardTitle>
+          <CardTitle className="font-serif text-gray-900">
+            ADDIS ABABA UNIVERSITY CLUBS
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           {loading ? (
             <div className="grid gap-3 animate-pulse">
               {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={`club-skeleton-${idx}`} className="border border-border p-3 space-y-3">
+                <div
+                  key={`club-skeleton-${idx}`}
+                  className="border border-border p-3 space-y-3"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="h-4 w-48 bg-gray-200 rounded" />
                     <div className="flex gap-2">
@@ -94,7 +105,7 @@ export function ExistingClubsSection({
                               variant: "destructive",
                               confirmText: "Delete",
                               cancelText: "Cancel",
-                            }
+                            },
                           );
                           if (confirmed) {
                             onDelete(c.id);
@@ -106,9 +117,17 @@ export function ExistingClubsSection({
                     </div>
                   </div>
                   <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
-                    <div>President: {getClubLeadEmail(c, "PRESIDENT")}</div>
-                    <div>VP: {getClubLeadEmail(c, "VP")}</div>
-                    <div>Secretary: {getClubLeadEmail(c, "SECRETARY")}</div>
+                    <div>
+                      President: {getClubLeadEmail(c, "PRESIDENT")} •{" "}
+                      {getClubLeadPhone(c, "PRESIDENT")}
+                    </div>
+                    <div>
+                      VP: {getClubLeadEmail(c, "VP")} • {getClubLeadPhone(c, "VP")}
+                    </div>
+                    <div>
+                      Secretary: {getClubLeadEmail(c, "SECRETARY")} •{" "}
+                      {getClubLeadPhone(c, "SECRETARY")}
+                    </div>
                   </div>
                 </div>
               ))}

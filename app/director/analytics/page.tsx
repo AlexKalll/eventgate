@@ -23,10 +23,16 @@ type ClubMetric = {
     endTime: string;
   }>;
   leadership: {
-    president: string | null;
-    vicePresident: string | null;
-    secretary: string | null;
+    president: LeadContact;
+    vicePresident: LeadContact;
+    secretary: LeadContact;
   };
+};
+
+type LeadContact = {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 type AnalyticsResponse = {
@@ -167,9 +173,15 @@ export default function DirectorAnalyticsPage() {
       "Approved",
       "Rejected",
       "Pending",
-      "President",
-      "Vice President",
-      "Secretary",
+      "President Name",
+      "President Email",
+      "President Phone",
+      "Vice President Name",
+      "Vice President Email",
+      "Vice President Phone",
+      "Secretary Name",
+      "Secretary Email",
+      "Secretary Phone",
     ];
     const rows = data.clubs.map((club) => [
       data.academicYear,
@@ -178,9 +190,15 @@ export default function DirectorAnalyticsPage() {
       String(club.approved),
       String(club.rejected),
       String(club.pending),
-      club.leadership.president || "",
-      club.leadership.vicePresident || "",
-      club.leadership.secretary || "",
+      club.leadership.president?.name || "",
+      club.leadership.president?.email || "",
+      club.leadership.president?.phone || "",
+      club.leadership.vicePresident?.name || "",
+      club.leadership.vicePresident?.email || "",
+      club.leadership.vicePresident?.phone || "",
+      club.leadership.secretary?.name || "",
+      club.leadership.secretary?.email || "",
+      club.leadership.secretary?.phone || "",
     ]);
     return [header, ...rows];
   }, [data]);
@@ -406,6 +424,50 @@ export default function DirectorAnalyticsPage() {
                       <p className="text-sm font-medium text-gray-900">
                         {selectedClub.clubName} proposals in {data?.academicYear}
                       </p>
+                    </div>
+                    <div className="border-b border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Club Leadership
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {[
+                          {
+                            label: "President",
+                            contact: selectedClub.leadership.president,
+                          },
+                          {
+                            label: "Vice President",
+                            contact: selectedClub.leadership.vicePresident,
+                          },
+                          {
+                            label: "Secretary",
+                            contact: selectedClub.leadership.secretary,
+                          },
+                        ].map(({ label, contact }) => {
+                          const lead = contact;
+                          const displayName =
+                            lead.name || lead.email || lead.phone || "Not available";
+                          return (
+                            <div
+                              key={label}
+                              className="rounded border border-gray-200 bg-gray-50 px-2 py-2"
+                            >
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                {label}
+                              </span>
+                              <div className="mt-1 text-sm font-medium text-gray-900">
+                                {displayName}
+                              </div>
+                              <div className="mt-1 text-xs text-gray-600 break-words">
+                                {lead.email || "-"}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {lead.phone || "-"}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="h-full overflow-hidden">
                       {selectedClub.events.length === 0 ? (
