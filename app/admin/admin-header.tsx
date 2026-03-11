@@ -71,65 +71,65 @@ export function AdminHeader({ userEmail }: { userEmail: string }) {
               href="/admin/clubs"
               className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/clubs")
-                  ? "text-[var(--aau-blue)]"
-                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+                  ? "text-(--aau-blue)"
+                  : "text-gray-700 hover:text-(--aau-blue)"
               }`}
             >
               Clubs
               {isActive(pathname, "/admin/clubs") && (
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+                <span className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-(--aau-blue)" />
               )}
             </Link>
             <Link
               href="/admin/clubs/new"
               className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/clubs/new")
-                  ? "text-[var(--aau-blue)]"
-                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+                  ? "text-(--aau-blue)"
+                  : "text-gray-700 hover:text-(--aau-blue)"
               }`}
             >
               Add Club
               {isActive(pathname, "/admin/clubs/new") && (
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+                <span className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-(--aau-blue)" />
               )}
             </Link>
             <Link
               href="/admin/system-roles"
               className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/system-roles")
-                  ? "text-[var(--aau-blue)]"
-                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+                  ? "text-(--aau-blue)"
+                  : "text-gray-700 hover:text-(--aau-blue)"
               }`}
             >
               System Roles
               {isActive(pathname, "/admin/system-roles") && (
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+                <span className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-(--aau-blue)" />
               )}
             </Link>
             <Link
               href="/admin/users"
               className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/users")
-                  ? "text-[var(--aau-blue)]"
-                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+                  ? "text-(--aau-blue)"
+                  : "text-gray-700 hover:text-(--aau-blue)"
               }`}
             >
               Users
               {isActive(pathname, "/admin/users") && (
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+                <span className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-(--aau-blue)" />
               )}
             </Link>
             <Link
               href="/admin/locations"
               className={`relative inline-flex items-center h-9 px-3 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/locations")
-                  ? "text-[var(--aau-blue)]"
-                  : "text-gray-700 hover:text-[var(--aau-blue)]"
+                  ? "text-(--aau-blue)"
+                  : "text-gray-700 hover:text-(--aau-blue)"
               }`}
             >
               Locations
               {isActive(pathname, "/admin/locations") && (
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[var(--aau-blue)]" />
+                <span className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-(--aau-blue)" />
               )}
             </Link>
           </nav>

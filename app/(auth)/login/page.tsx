@@ -246,7 +246,7 @@ function LoginContent() {
               )}
               <Button
                 type="submit"
-                className="w-full cursor-pointer rounded-none bg-[var(--aau-blue)] hover:bg-[var(--aau-blue)]/90"
+                className="w-full cursor-pointer rounded-none bg-(--aau-blue) hover:bg-(--aau-blue)/90"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
@@ -255,7 +255,7 @@ function LoginContent() {
                 Don&apos;t have an account?{" "}
                 <Link
                   href="/sign-up"
-                  className="underline underline-offset-4 text-[var(--aau-blue)] hover:text-[var(--aau-blue)]/80"
+                  className="underline underline-offset-4 text-(--aau-blue) hover:text-(--aau-blue)/80"
                 >
                   Sign up
                 </Link>
