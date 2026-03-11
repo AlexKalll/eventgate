@@ -342,6 +342,13 @@ export async function GET(request: Request) {
                   location: true,
                   startTime: true,
                   endTime: true,
+                  occurrences: {
+                    select: {
+                      startTime: true,
+                      endTime: true,
+                      location: true,
+                    },
+                  },
                 },
               },
               collaborators: true,
@@ -394,6 +401,13 @@ export async function GET(request: Request) {
               location: true,
               startTime: true,
               endTime: true,
+              occurrences: {
+                select: {
+                  startTime: true,
+                  endTime: true,
+                  location: true,
+                },
+              },
             },
           },
           collaborators: true,

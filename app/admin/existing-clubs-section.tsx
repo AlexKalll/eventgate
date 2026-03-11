@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmation } from "@/components/ui/confirmation-card";
 import { Trash2 } from "lucide-react";
+import { Edit } from "lucide-react";
 
 type ClubRole = "PRESIDENT" | "VP" | "SECRETARY";
 
@@ -78,17 +79,18 @@ export function ExistingClubsSection({
           ) : (
             <div className="grid gap-3">
               {clubs.map((c) => (
-                <div key={c.id} className="border border-border p-3">
+                <div key={c.id} className="border border-border p-3 ">
                   <div className="flex items-start justify-between gap-4">
                     <div className="font-medium">{c.name.toUpperCase()}</div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ">
                       <Button
-                        className="rounded-none"
+                        className="rounded-none hover:bg-white"
                         variant="outline"
                         size="sm"
                         onClick={() => onEdit(c)}
                       >
                         Edit
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         className="rounded-none bg-white hover:bg-white "
@@ -122,7 +124,8 @@ export function ExistingClubsSection({
                       {getClubLeadPhone(c, "PRESIDENT")}
                     </div>
                     <div>
-                      VP: {getClubLeadEmail(c, "VP")} • {getClubLeadPhone(c, "VP")}
+                      VP: {getClubLeadEmail(c, "VP")} •{" "}
+                      {getClubLeadPhone(c, "VP")}
                     </div>
                     <div>
                       Secretary: {getClubLeadEmail(c, "SECRETARY")} •{" "}

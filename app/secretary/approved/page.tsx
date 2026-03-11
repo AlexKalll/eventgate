@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatDualTimeRange } from "@/lib/utils";
+import { formatDualTimeRange, formatSessionSummary } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { statusColors, statusLabels } from "@/lib/proposal-status";
 
@@ -172,15 +172,11 @@ export default function SecretaryApprovedPage() {
                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {(() => {
-                      const { western, ethiopian } = formatDualTimeRange(
-                        proposal.event?.startTime,
-                        proposal.event?.endTime,
-                      );
-                      return ethiopian
-                        ? `${western} • LT: [${ethiopian}]`
-                        : western;
-                    })()}
+                    {formatSessionSummary({
+                      occurrences: proposal.event?.occurrences,
+                      startTime: proposal.event?.startTime,
+                      endTime: proposal.event?.endTime,
+                    })}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
                     Location: {proposal.event?.location || "Not specified"}
@@ -401,3 +397,4 @@ export default function SecretaryApprovedPage() {
     </main>
   );
 }
+

@@ -48,7 +48,7 @@ export function AdminHeader({ userEmail }: { userEmail: string }) {
       <div className="w-full text-gray-900 bg-white border-b border-gray-200">
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-2 lg:px-8">
           <div className="flex items-center min-w-0">
-            <Link href="/admin" className="flex items-center gap-3 group min-w-0">
+            <Link href="/" className="flex items-center gap-3 group min-w-0">
               <img
                 src="/aauLogo.png"
                 alt="AAU Logo"
@@ -252,7 +252,9 @@ export function AdminHeader({ userEmail }: { userEmail: string }) {
                     >
                       <Button
                         variant={
-                          isActive(pathname, "/admin/users") ? "default" : "ghost"
+                          isActive(pathname, "/admin/users")
+                            ? "default"
+                            : "ghost"
                         }
                         className="h-10 w-full justify-start rounded-none"
                       >
@@ -298,4 +300,3 @@ export function AdminHeader({ userEmail }: { userEmail: string }) {
     </header>
   );
 }
-

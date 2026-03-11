@@ -26,6 +26,28 @@ export function formatWesternAddisDateTime(input: string | Date) {
   }).format(d);
 }
 
+export function formatWesternAddisDate(input: string | Date) {
+  const d = toValidDate(input);
+  if (!d) return "Invalid date";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: addisTimeZone,
+    weekday: "short",
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(d);
+}
+
+export function formatWesternAddisTime(input: string | Date) {
+  const d = toValidDate(input);
+  if (!d) return "Invalid time";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: addisTimeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
+}
+
 export function formatEthiopianClockTime(input: string | Date) {
   const d = toValidDate(input);
   if (!d) return "Invalid date";
@@ -66,11 +88,37 @@ export function formatDualTimeRange(
   }
 
   return {
-    western: `${formatWesternAddisDateTime(
+    western: `${formatWesternAddisDate(start)}, ${formatWesternAddisTime(
       start
-    )} - ${formatWesternAddisDateTime(end)}`,
-    ethiopian: `${formatEthiopianClockTime(start)} - ${formatEthiopianClockTime(
-      end
-    )}`,
+    )} - ${formatWesternAddisTime(end)}`,
+    ethiopian: "",
   };
+}
+
+export function formatSessionSummary(input: {
+  occurrences?:
+    | Array<{ startTime?: string | Date | null; endTime?: string | Date | null }>
+    | null;
+  startTime?: string | Date | null;
+  endTime?: string | Date | null;
+}) {
+  const sessions =
+    input.occurrences && input.occurrences.length
+      ? input.occurrences
+      : [
+          {
+            startTime: input.startTime,
+            endTime: input.endTime,
+          },
+        ];
+
+  const labels = sessions
+    .map((session) =>
+      formatDualTimeRange(session.startTime, session.endTime).western,
+    )
+    .filter((label) => label && label !== "Not specified");
+
+  if (!labels.length) return "Time: Not specified";
+  if (labels.length === 1) return `Time: ${labels[0]}`;
+  return `Sessions: ${labels.join(" | ")}`;
 }

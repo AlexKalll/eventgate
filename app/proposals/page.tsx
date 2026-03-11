@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -247,19 +247,37 @@ export default function ProposalsPage() {
     run();
   }, [isPending, page]);
 
-  const formatDaysLeft = (startTime?: string) => {
-    if (!startTime) return "";
-    const start = new Date(startTime);
-    if (Number.isNaN(start.getTime())) return "";
+  const formatDaysLeft = (sessionStarts: Date[]) => {
+    if (!sessionStarts.length) return "";
     const now = new Date();
-    const diffMs = start.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(todayStart.getDate() + 1);
 
-    if (diffDays > 1) return `${diffDays} days left`;
-    if (diffDays === 1) return "1 day left";
-    if (diffDays === 0) return "Today";
-    if (diffDays === -1) return "1 day ago";
-    return `${Math.abs(diffDays)} days ago`;
+    const valid = sessionStarts.filter((d) => !Number.isNaN(d.getTime()));
+    if (!valid.length) return "";
+
+    const hasToday = valid.some(
+      (d) => d >= todayStart && d < tomorrowStart,
+    );
+    if (hasToday) return "Today";
+
+    const upcoming = valid.filter((d) => d >= tomorrowStart);
+    if (upcoming.length) {
+      const next = upcoming.sort((a, b) => a.getTime() - b.getTime())[0];
+      const diffMs = next.getTime() - todayStart.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays > 1) return `${diffDays} days left`;
+      return "1 day left";
+    }
+
+    const past = valid.filter((d) => d < todayStart);
+    const last = past.sort((a, b) => b.getTime() - a.getTime())[0];
+    const diffMs = todayStart.getTime() - last.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) return "1 day ago";
+    return `${diffDays} days ago`;
   };
 
   const openDetails = (proposal: Proposal) => {
@@ -416,11 +434,73 @@ export default function ProposalsPage() {
           <>
             <div className="space-y-4">
               {proposals.map((proposal) => {
-                const { western, ethiopian } = formatDualTimeRange(
-                  proposal.event?.startTime,
-                  proposal.event?.endTime,
+                const occurrences = Array.isArray(proposal.event?.occurrences)
+                  ? proposal.event.occurrences
+                      .slice()
+                      .sort(
+                        (a, b) =>
+                          new Date(a.startTime).getTime() -
+                          new Date(b.startTime).getTime(),
+                      )
+                  : [];
+                const sessions = occurrences.length
+                  ? occurrences
+                  : [
+                      {
+                        startTime: proposal.event?.startTime,
+                        endTime: proposal.event?.endTime,
+                      },
+                    ];
+                const sessionCount = sessions.length || 0;
+                const sessionDates = sessions
+                  .map((s) => (s?.startTime ? new Date(s.startTime) : null))
+                  .filter((d): d is Date => Boolean(d));
+                const daysLeft = formatDaysLeft(sessionDates);
+
+                const now = new Date();
+                const todayStart = new Date(now);
+                todayStart.setHours(0, 0, 0, 0);
+                const tomorrowStart = new Date(todayStart);
+                tomorrowStart.setDate(todayStart.getDate() + 1);
+
+                const sessionWithDates = sessions
+                  .map((s) => ({
+                    start: s?.startTime ? new Date(s.startTime) : null,
+                    end: s?.endTime ? new Date(s.endTime) : null,
+                  }))
+                  .filter((s) => s.start && !Number.isNaN(s.start.getTime()));
+
+                const todaySessions = sessionWithDates.filter(
+                  (s) => s.start && s.start >= todayStart && s.start < tomorrowStart,
                 );
-                const daysLeft = formatDaysLeft(proposal.event?.startTime);
+                const futureSessions = sessionWithDates.filter(
+                  (s) => s.start && s.start >= tomorrowStart,
+                );
+
+                const nextSession =
+                  (todaySessions.length
+                    ? todaySessions.sort(
+                        (a, b) =>
+                          (a.start?.getTime() || 0) -
+                          (b.start?.getTime() || 0),
+                      )[0]
+                    : futureSessions.length
+                      ? futureSessions.sort(
+                          (a, b) =>
+                            (a.start?.getTime() || 0) -
+                            (b.start?.getTime() || 0),
+                        )[0]
+                      : sessionWithDates[0]) || null;
+
+                const { western } = formatDualTimeRange(
+                  nextSession?.start || proposal.event?.startTime,
+                  nextSession?.end || proposal.event?.endTime,
+                );
+                const sessionLabels = sessions
+                  .map((s) =>
+                    formatDualTimeRange(s?.startTime, s?.endTime).western,
+                  )
+                  .filter((label) => label && label !== "Not specified");
 
                 return (
                   <Card
@@ -490,30 +570,26 @@ export default function ProposalsPage() {
                                 {proposal.event?.title || "Untitled Proposal"}
                               </div>
                               <div className="text-xs text-gray-500 truncate">
-                                {daysLeft ? `${daysLeft} • ` : ""}
-                                {ethiopian
-                                  ? `Time: ${western} | LT: [${ethiopian}]`
+                                {sessionLabels.length > 1
+                                  ? `Sessions: ${sessionLabels.join(" | ")}`
                                   : `Time: ${western}`}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 ">
-                              <Badge
-                                className={`rounded-full ${
-                                  statusColors[
-                                    proposal.status as keyof typeof statusColors
-                                  ]
-                                } whitespace-nowrap`}
-                              >
-                                {
-                                  statusLabels[
-                                    proposal.status as keyof typeof statusLabels
-                                  ]
-                                }
-                              </Badge>
-                            </div>
+                            <Badge
+                              className={`rounded-full ${
+                                statusColors[
+                                  proposal.status as keyof typeof statusColors
+                                ]
+                              } whitespace-nowrap`}
+                            >
+                              {
+                                statusLabels[
+                                  proposal.status as keyof typeof statusLabels
+                                ]
+                              }
+                            </Badge>
                           </div>
                         </div>
-
                         <div
                           className="flex items-center gap-2 "
                           onPointerDown={(e) => e.stopPropagation()}
@@ -1064,3 +1140,10 @@ export default function ProposalsPage() {
     </div>
   );
 }
+
+
+
+
+
+
+

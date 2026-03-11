@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatDualTimeRange } from "@/lib/utils";
+import { formatDualTimeRange, formatSessionSummary } from "@/lib/utils";
 import { RotateCcw, Trash, Trash2 } from "lucide-react";
 
 interface Proposal {
@@ -386,3 +386,4 @@ export default function PresidentArchivePage() {
     </div>
   );
 }
+

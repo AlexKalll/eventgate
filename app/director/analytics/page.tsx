@@ -458,7 +458,7 @@ export default function DirectorAnalyticsPage() {
                               <div className="mt-1 text-sm font-medium text-gray-900">
                                 {displayName}
                               </div>
-                              <div className="mt-1 text-xs text-gray-600 break-words">
+                              <div className="mt-1 text-xs text-gray-600 wrap-break-word">
                                 {lead.email || "-"}
                               </div>
                               <div className="text-xs text-gray-600">
