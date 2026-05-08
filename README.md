@@ -1,4 +1,5 @@
 Here’s the **full workflow**, detailed step by step, strictly following your SRS rules and the original event form you shared, from **President submission to Director approval**:
+
 ---
 
 ## 1. President Creates Event Request
